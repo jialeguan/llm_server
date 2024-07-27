@@ -17,35 +17,37 @@ An LLM service responds to a user query in two phases.
 
 ## Characteristics of Each Phase
 
-![alt text](image.png)
+![alt text](png/image.png)
 
 ## Optimization Strategies: Batch
 
-![batch size](image-2.png)
+![batch size](png/image-2.png)
 
-![alt text](image-1.png)
+![alt text](png/image-1.png)
 
-**Improve memory efficiency**: Batching multiple queries together can improve throughput by amortizing the overhead of fetching model parameters and intermediate states over multiple queries.
+**Improve memory efficiency**: Batching multiple queries together can improve throughput by amortizing the overhead of fetching model parameters and intermediate states over multiple queries. This process is consistent across varying input sizes.
 
 ## Existing Approaches
 
 Larger batch sizes can lead to increased latency.
 
-![alt text](image-4.png)
+![alt text](png/image-4.png)
 
-![approches](image-3.png)
+![approches](png/image-3.png)
 
 Batching can suffer from bubble latency, where the last query in a batch experiences higher latency than the rest.
 
-![alt text](image-5.png)
+![alt text](png/image-5.png)
+
+Maybe this diagram depicts Tensor-Parallelism?
 
 ## Optimization 1: Chucked-Prefill
 
 Naively, this can be done by creating hybrid batches which combine the memory bound decodes along with compute bound prefills
 
-![alt text](image-6.png)
+![alt text](png/image-6.png)
 
-![alt text](image-8.png)
+![alt text](png/image-8.png)
 
 ## Optimization 2: Stall-free batching
 
@@ -64,7 +66,7 @@ Cons:
 
   - even at small chunk sizes attention prefill operation is compute bound operation
 
-  ![alt text](image-7.png)
+  ![alt text](png/image-7.png)
 
 Solution:
 
@@ -76,11 +78,29 @@ one-time profiling of batches with different number of tokens and setting the to
 <https://github.com/microsoft/sarathi-serve>
 
 
-![†](image-9.png)
+![†](png/image-9.png)
 
-![alt text](image-10.png)
+![alt text](png/image-10.png)
+
+![alt text](png/image-12.png)
+
+Line 6-8: pack all the running decodes in the next batch
+
+Line 9-12: include any partially completed prefill
+
+Line 13-20: check if the next chunk of tokens can be accommodated in the GPU memory
+
+<https://github.com/microsoft/sarathi-serve/blob/main/sarathi/core/scheduler/sarathi_scheduler.py>
+
+There are two cases:
+1. The sequence group has incomplete prefill. The routine
+remains identical to the one in sarathi scheduler for such sequences.
+1. The sequence group has completed prefill. In this case, we need to
+check for memory availability for the next chunk of decode tokens, and preempt
+some sequence groups if necessary. Note that, the preempted sequence groups
+might belong to either of the two categories.
 
 ### W/ Tensor Parallelism
 
-![alt text](image-11.png)
+![alt text](png/image-11.png)
 
