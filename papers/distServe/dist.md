@@ -95,7 +95,7 @@ batching is key to avoiding low GPU utilization (hence high per-gpu goodput)
 
 ## Challenges
 
-| Challenge | Sarathi-Serve | DistServe |
+| Challenge | DistServe | Sarathi-Serve | 
 | --- | --- | --- |
 | Variable prefill length | Workloaded-based batch, with a total sequence length close to $L_m$ | Chucked prefill |
 | Communication overhead | Affinity-based cluster | N/A |
@@ -111,7 +111,7 @@ On high node-affinity clusters equipped with Infiniband, KV caches transmission 
 
 Real-testbed profiling is time-prohibitive.
 
-Generate trave based on historical data.
+Generate trace based on historical data.
 
 One node contains multiple GPUs.
 
