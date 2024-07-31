@@ -77,7 +77,6 @@ one-time profiling of batches with different number of tokens and setting the to
 
 <https://github.com/microsoft/sarathi-serve>
 
-
 ![†](png/image-9.png)
 
 ![alt text](png/image-10.png)
@@ -93,6 +92,7 @@ Line 13-20: check if the next chunk of tokens can be accommodated in the GPU mem
 <https://github.com/microsoft/sarathi-serve/blob/main/sarathi/core/scheduler/sarathi_scheduler.py>
 
 There are two cases:
+
 1. The sequence group has incomplete prefill. The routine
 remains identical to the one in sarathi scheduler for such sequences.
 1. The sequence group has completed prefill. In this case, we need to
@@ -103,4 +103,3 @@ might belong to either of the two categories.
 ### W/ Tensor Parallelism
 
 ![alt text](png/image-11.png)
-
