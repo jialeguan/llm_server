@@ -17,13 +17,13 @@ An LLM service responds to a user query in two phases.
 
 ## Characteristics of Each Phase
 
-![alt text](png/image.png)
+![alt text](png/sarathi/image.png)
 
 ## Optimization Strategies: Batch
 
-![batch size](png/image-2.png)
+![batch size](png/sarathi/image-2.png)
 
-![alt text](png/image-1.png)
+![alt text](png/sarathi/image-1.png)
 
 **Improve memory efficiency**: Batching multiple queries together can improve throughput by amortizing the overhead of fetching model parameters and intermediate states over multiple queries. This process is consistent across varying input sizes.
 
@@ -31,13 +31,13 @@ An LLM service responds to a user query in two phases.
 
 Larger batch sizes can lead to increased latency.
 
-![alt text](png/image-4.png)
+![alt text](png/sarathi/image-4.png)
 
-![approches](png/image-3.png)
+![approches](png/sarathi/image-3.png)
 
 Batching can suffer from bubble latency, where the last query in a batch experiences higher latency than the rest.
 
-![alt text](png/image-5.png)
+![alt text](png/sarathi/image-5.png)
 
 Maybe this diagram depicts Tensor-Parallelism?
 
@@ -45,9 +45,9 @@ Maybe this diagram depicts Tensor-Parallelism?
 
 Naively, this can be done by creating hybrid batches which combine the memory bound decodes along with compute bound prefills
 
-![alt text](png/image-6.png)
+![alt text](png/sarathi/image-6.png)
 
-![alt text](png/image-8.png)
+![alt text](png/sarathi/image-8.png)
 
 ## Optimization 2: Stall-free batching
 
@@ -66,7 +66,7 @@ Cons:
 
   - even at small chunk sizes attention prefill operation is compute bound operation
 
-  ![alt text](png/image-7.png)
+  ![alt text](png/sarathi/image-7.png)
 
 Solution:
 
@@ -77,11 +77,11 @@ one-time profiling of batches with different number of tokens and setting the to
 
 <https://github.com/microsoft/sarathi-serve>
 
-![†](png/image-9.png)
+![†](png/sarathi/image-9.png)
 
-![alt text](png/image-10.png)
+![alt text](png/sarathi/image-10.png)
 
-![alt text](png/image-12.png)
+![alt text](png/sarathi/image-12.png)
 
 Line 6-8: pack all the running decodes in the next batch
 
@@ -89,7 +89,7 @@ Line 9-12: include any partially completed prefill
 
 Line 13-20: check if the next chunk of tokens can be accommodated in the GPU memory
 
-<https://github.com/microsoft/sarathi-serve/blob/main/sarathi/core/scheduler/sarathi_scheduler.py>
+<https://github.com/microsoft/sarathi-serve/blob/main/png/sarathi/core/scheduler/sarathi_scheduler.py>
 
 There are two cases:
 
@@ -102,4 +102,4 @@ might belong to either of the two categories.
 
 ### W/ Tensor Parallelism
 
-![alt text](png/image-11.png)
+![alt text](png/sarathi/image-11.png)

@@ -2,7 +2,7 @@
 
 Two phases with very distinct computational characteristics and latency requirements
 
-![alt text](png/image.png)
+![alt text](png/distServe/image.png)
 
 ## Optimization Strategies
 
@@ -15,7 +15,7 @@ Two phases with very distinct computational characteristics and latency requirem
 
 ### Strong prefill-decoding interference
 
-![alt text](png/image-1.png)
+![alt text](png/distServe/image-1.png)
 
 The decoding tasks in the batch must wait for lengthier prefill jobs to complete, thus extending TPOT; the slowdown intensifies with a longer prefill, shown in Figure 2(b). Adding decoding jobs to prefill also increases the time to complete the prefill task, particularly when the GPU is already at capacity
 
@@ -35,7 +35,7 @@ The prefill phase benefits from more GPUs and intra-op parallelism(tensor parall
 
 > Assuming a given arrival rate, our goal is to fulfill the service’s latency requirement on TTFT using the least resources.
 
-![alt text](png/image-2.png)
+![alt text](png/distServe/image-2.png)
 
 $L_M$,
 
@@ -43,7 +43,7 @@ beyond this threshold, the prefill phase becomes compute-bound.
 
 #### 1.2 Model Parallelism
 
-![alt text](png/image-3.png)
+![alt text](png/distServe/image-3.png)
 
 Intra-op(tensor) parallelism is more efficient at lower arrival rates, while inter-op(pipiline) parallelism gains superiority as the rate increases.
 
@@ -67,13 +67,13 @@ $R$ is the Poisson arrival rate. It represents the average rate at which custome
 
 Under condition $RD < 1$.
 
-![alt text](png/image-4.png)
+![alt text](png/distServe/image-4.png)
 
-![](png/image-5.png)
+![](png/distServe/image-5.png)
 
 > Speedup coefficient K, where 1 < K < 2, reflecting the imperfect speedup caused by high communication overheads of intra-op parallelism.
 
-![alt text](png/image-6.png)
+![alt text](png/distServe/image-6.png)
 
 ### 2. Decoding
 
@@ -83,7 +83,7 @@ batching is key to avoiding low GPU utilization (hence high per-gpu goodput)
 
 #### 2.2 Model Parallelism
 
-![alt text](png/image-7.png)
+![alt text](png/distServe/image-7.png)
 
 ### 3. Summary
 
@@ -115,24 +115,24 @@ Generate trace based on historical data.
 
 One node contains multiple GPUs.
 
-![alt text](png/image-8.png)
+![alt text](png/distServe/image-8.png)
 
 ### Placement for Low Node-Affinity Cluster
 
-![alt text](png/image-9.png)
+![alt text](png/distServe/image-9.png)
 
-![alt text](png/image-10.png)
+![alt text](png/distServe/image-10.png)
 
 ### Online Scheduling
 
-![alt text](png/image-11.png)
+![alt text](png/distServe/image-11.png)
 
 When workload pattern changes over time, the profiler monitor the system and adjust the placement.
 
 ## Evaluation
 
-![alt text](png/image-12.png)
+![alt text](png/distServe/image-12.png)
 
 ### Latency Breakdown
 
-![alt text](png/image-13.png)
+![alt text](png/distServe/image-13.png)
