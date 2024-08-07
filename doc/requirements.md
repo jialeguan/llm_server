@@ -1,5 +1,9 @@
 ## Stateless computation & Enforceable guarantees
 
+### Requirements
+
+>  Private Cloud Compute must use the personal user data that it receives exclusively for the purpose of fulfilling the user’s request. This data must never be available to anyone other than the user, not even to Apple staff, not even during active processing. And this data **must not be retained, including via logging or for debugging, after the response is returned to the user**. In other words, we want a strong form of stateless data processing where personal data **leaves no trace in the PCC system**.
+
 ### Operation
 
 - All code that can run on the node must be part of a trust cache that has been signed by Apple, approved for that specific PCC node, and loaded by the Secure Enclave such that it cannot be changed or amended at runtime.
