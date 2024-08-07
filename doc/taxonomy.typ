@@ -235,7 +235,7 @@
   #[
     #set text(size: 11pt)
     #let cm = emoji.checkmark.heavy
-    #let first = emoji.star
+    #let first = emoji.checkmark.heavy + "1st"
     #let na = ""
 
     #tablex(
