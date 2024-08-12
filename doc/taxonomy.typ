@@ -229,17 +229,42 @@
     *P*: No privileged runtime access
     *T*: Non-targetability
     *V*: Verifiable transparency
-   
+
   ]
 
   #[
-    #set text(size: 11pt)
+    #set text(size: 10pt)
     #let cm = emoji.checkmark.heavy
-    #let first = emoji.checkmark.heavy
+    #let first = "Initial"
     #let na = ""
 
+    #let model_header(name, year) = {
+      let len
+      let size
+
+      len = name.len()
+      if len > 5 {
+        size = 8pt
+      } else {
+        size = 10pt
+      }
+
+      set text(size: size)
+      [*#name*\ ]
+
+      year = str(year)
+      len = year.len()
+      if len > 5 {
+        size = 8pt
+      } else {
+        size = 10pt
+      }
+      set text(size: size)
+      year
+    }
+
     #tablex(
-    columns: 12,
+    columns: 14,
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
@@ -248,65 +273,128 @@
     [*Type*],
     [*Optimization*],
     [*Threat*],
-    [*FT*\ 22],
-    [*Orca*\ 22],
-    [*vLLM*\ 23],
-    [*FlexGen*\ 23],
-    [*Sarathi*\ 23],
-    [*DistServe*\ 24],
-    [*Mooncake*\ Moonshot],
-    link("https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fastgen")[*DeepSpeed*\ Microsoft],
-    [*TensorRT*\ NVIDIA],
+    model_header("FT", 22),
+    // [*Orca*\ 22],
+    model_header("Orca", 22),
+    model_header("vLLM", 23),
+    model_header("FlexGen", 23),
+    model_header("FastServe", 23),
+    model_header("Sarathi", 23),
+    model_header("DistServe", 24),
+    model_header("TetriInfer", 24),
+    model_header("Mooncake", "Moonshot"),
+    model_header("DeepSpeed", "Microsoft"),
+    model_header("TensorRT-LLM", "NVIDIA"),
+    // link("https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fastgen")[*DeepSpeed*\ Microsoft],
+    // link("https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/overview.md")[*TensorRT*\ NVIDIA],
     /* -------------- */
 
-    rowspanx(5)[*Storage*\ (KVCache)], [Paging], na, [], [], first, [], cm, [], cm, cm, [],
-    (), [Duplication], na, [], [], [], [], [], [], cm, [], [],
-    (), [Offloading], [*SE*], [], [], [], cm, [], [], cm, [], [],
-    (), [Pulling], [*SET*], [], [], [], [], [], cm, [], [], [],
-    (), [Model Compression], na, [], [], [], [], [], [], [], [], [],
+    rowspanx(4)[*Storage*\ (KVCache)], [Paging], na, [], [], first, [], [], cm, [], [], cm, cm, [],
+    (), [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], cm, [], cm,
+    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], cm, [], [],
+    (), [Pulling], [*SET*], [], [], [], [], [], [], cm, [], [], [], [],
+    // (), [Model Compression], na, [], [], [], [], [], [], [], [], [], [], [],
 
-    rowspanx(4)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], [], [], cm, cm, [],
-    (), [Online/Offline Profiling], [*P*], [], [], [], [], [], cm, cm, [], [],
-    (), [Local Scheduler], [*ET*], [], [], [], [], [], [], cm, [], [],
-    (), [Disaggregated Arch], na, [], [], [], [], [], cm, cm, [], [],
+    rowspanx(5)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], cm, cm, [], cm, cm, cm, [],
+    (), [Local Scheduler], [*ET*], [], [], [], [], cm, [], [], cm, cm, [], [],
+    (), [Instance Flip], [*P*], [], [], [], [], [], [], [], cm, [], [], [],
+    (), [Disaggregated Arch], na, [], [], [], [], [], [], cm, cm, cm, [], [],
+    (), [Online/Offline Profiling], [*P*], [], [], [], [], [], [], cm, [], cm, [], [],
 
-    rowspanx(3)[*PP*], [Iteration-Level Batch], na, [], first, cm, [], cm, cm, cm, cm, [],
-    (), [Chunked Prefill], na, [], [], [], [], first, [], cm, cm, [],
-    (), [Prepack Prefill], na, [], [], [], [], [], cm, [], [], [],
+    // (), [Logging], [*P*], [], [], [], [], [], [], [], [], cm,
 
-    [*Verification*], [Uninspected Code], [*V*], [], [], [], [], [], [], cm, [], [],
+    rowspanx(3)[*PP*], [Iteration-Level Batch], na, [], first, cm, [], cm, cm, cm, cm, cm, cm, cm,
+    (), [Chunked Prefill], na, [], [], [], [], [], first, [], cm, cm, cm, [],
+    (), [Prepack Prefill], na, [], [], [], [], [], [], cm, cm, [], [], [],
+
+    [*Verification*], [Uninspected Code], [*V*], [], [], [], [], [], [], [], [], cm, [], [],
     )
-    // #[SP: Sequence parallelism\
-    // TP: Tensor parallelism\
-    // PP: Pipeline parallelism\
-    // ]
   ]
+]
+
+=== Paging & Offloading
+
+#slide[
+  #set text(size: 16pt)
+  Definition:
+  - Paging: 使用类似于虚拟内存的机制，将模型参数分页存储在磁盘上，根据需要加载到内存中。
+  - Offloading: 将模型参数从GPU内存中移动到CPU内存或磁盘中，以释放GPU内存供其他模型使用。
+
+  Threats:
+  - 分页处理过程中可能会产生包含敏感信息的日志，这些日志如果没有妥善管理，可能会泄露隐私数据。
+  - 分页数据可能会被意外持久化到不安全的存储介质中，从而暴露隐私数据。
+]
+
+=== Duplication & Pulling
+
+#slide[
+  #set text(size: 16pt)
+  Definition:
+  - Duplication: 在不同的节点之间复制模型参数，以便在多个节点上并行执行推理任务。
+  - Pulling: 从远程节点拉取模型参数，以便在本地节点上执行推理任务。
+
+  Threats:
+  - 模型参数的复制和拉取过程中可能会泄露隐私数据。
+  - 模型参数的复制和拉取过程中可能会定向到恶意节点，从而导致隐私数据泄露。如果其中任何一个节点被攻破，攻击者可能获得整个模型的敏感信息。
+  - 拉取模型参数可能导致数据不同步，尤其在多次拉取操作之间，可能出现数据不一致的情况，影响模型的准确性和隐私保护。
+]
+
+=== Priority-based Scheduler & Local Scheduler & Instance Flip
+
+#slide[
+  #set text(size: 13pt)
+  Definition:
+  - Priority-based Scheduler: 根据任务的优先级调度任务，以确保高优先级任务能够及时完成。
+  - Local Scheduler: 在本地节点上调度任务，以减少任务调度的延迟。
+
+  Threats:
+  （优先级调度）
+  - 可能通过观察任务的优先级来推断任务的重要性和敏感性，从而有针对性地进行攻击。
+  - 在任务调度过程中，任务的调度信息（如任务类型、数据类型等）可能被泄露，导致隐私数据暴露。'
+  （本地调度）
+  - 在本地节点上调度任务时，所有任务和数据都集中在本地节点，如果本地节点被攻破，所有数据和任务信息都可能被泄露。
+  - 本地节点可能会缓存大量的任务数据，如果这些缓存数据未妥善处理，可能会导致隐私泄露。
+  - 为了减少调度延迟，可能会牺牲一些数据同步和一致性机制，导致数据不一致。
+  （节点翻转）
+  - 攻击者可能修改恶意节点的数据，来让恶意节点被选中执行任务，从而获取敏感信息。
+  - 攻击者可能通过控制节点翻转的时机，来获取敏感信息。
+]
+
+=== Disaggregated Architecture & Online/Offline Profiling
+
+#slide[
+  #set text(size: 16pt)
+  Definition:
+  - Disaggregated Architecture: 将Prefill和Decode的过程通过实例（instance）分离，以提高资源利用率和灵活性。
+  - Online/Offline Profiling: 在线/离线性能分析，以优化模型推理性能。
+
+  Threats:
+  - 在进行用户画像时，会收集和存储大量的用户数据，包括在线行为数据和离线数据，这些数据一旦被泄露，可能对用户隐私造成严重威胁。
+]
+
+=== Iteration-Level Batch & Chunked Prefill & Prepack Prefill
+
+#slide[
+  #set text(size: 16pt)
+  Definition:
+  - Iteration-Level Batch: 在迭代级别上进行批处理，以提高模型推理性能。
+  - Chunked Prefill: 将Prefill过程分块，以减少Prefill的延迟。
+  - Prepack Prefill: 预先打包Prefill数据，以减少Prefill的延迟。
+
+  Threats:
+  - N/A.
 ]
 
 === Production LLMs
 
 #slide[
-  #set text(size: 14pt)
+  TorchServe - PyTorch
 
-  #tablex(
-    columns: 3,
-    align: center + horizon,
-    auto-vlines: false,
-    // repeat-header: true,
-
-    /* --- header --- */
-    [*Server*], [*Vendor*], [*Website*],
-    /* -------------- */
-    [-LLM], [NVIDIA], [`https://github.com/NVIDIA/TensorRT-LLM?tab=readme-ov-file`],
-
-  )
-  TorchServe
   Triton
   HuggingFace TGI
   FastServe
 
-  DistServe
-  TetriInfer
+
 
   Prompt Cache
   SGLang
@@ -327,10 +415,8 @@
 #let s = (s.methods.appendix)(self: s)
 #let (slide, empty-slide) = utils.slides(s)
 
-= Appendix
+// = Appendix
 
-=== Appendix
+// === Appendix
 
-#slide[
-  https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fastgen
-]
+// ]
