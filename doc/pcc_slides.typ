@@ -367,9 +367,9 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 
       len = name.len()
       if len > 5 {
-        size = 7pt
+        size = 6pt
       } else {
-        size = 8pt
+        size = 7pt
       }
 
       set text(size: size)
@@ -378,21 +378,21 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
       year = str(year)
       len = year.len()
       if len > 5 {
-        size = 7pt
+        size = 6pt
       } else {
-        size = 8pt
+        size = 7pt
       }
       set text(size: size)
       [#year]
     }
 
-    #set text(size: 9pt)
+    #set text(size: 7pt)
     #let cm = emoji.checkmark.heavy
     #let first = "Initial"
     #let na = ""
 
     #tablex(
-    columns: 17,
+    columns: 18,
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
@@ -410,6 +410,7 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
     model_header("Sarathi", 23),
     model_header("DistServe", 24),
     model_header("Splitwise", 24),
+    model_header("LoongServe", 24),
     model_header("TetriInfer", 24),
     model_header("Mooncake", "Moonshot"),
     model_header("DeepSpeed", "Microsoft"),
@@ -419,33 +420,37 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
     // link("https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/overview.md")[*TensorRT*\ NVIDIA],
     /* -------------- */
 
-    rowspanx(3)[*Memory*], [Paging], na, [], [], first, [], [], [], cm, [], [], cm, cm, cm, [], cm,
-    (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
-    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
+    rowspanx(3)[*Memory*], [Paging], na, [], [], first, [], [], [], cm, [], [], [], cm, cm, cm, [], cm,
+    (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
+    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
 
-    rowspanx(3)[*Tranmission*], [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], [], [], cm, [], cm, [],
-    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
-    (), [Pulling], [*SET*], [], [], [], [], [], [], [], cm, [], [], [], [], [], [],
+    rowspanx(3)[*Tranmission*], [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], [], [], [], cm, [], cm, [],
+    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
+    (), [Pulling], [*SET*], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [],
 
-    rowspanx(6)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], cm, [], cm, [], [], cm, cm, cm, [], [],
-    (), [Request-Level Prediction], [*T*], [], [], [], [], cm, [], [], [], [], cm, [], [], [], [],
-    (), [Local Scheduler], [*ET*], [], [], [], [], cm, [], [], [], cm, cm, cm, [], [], [],
-    (), [Disaggregated Arch], na, [], [], [], [], [], [], [], cm, cm, cm, cm, [], [], [],
-    (), [Instance Flip], [], [], [], [], [], [], [],[], [], cm, cm, [], [], [], [],
-    (), [Global Profiling], [*P*], [], [], [], cm, [], [], [], cm, cm, [], cm, [], [], [],
+    rowspanx(7)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], cm, [], cm, [], [], [], cm, cm, cm, [], [],
+    (), [Request-Level Prediction], [*T*], [], [], [], [], cm, [], [], [], [], [], cm, [], [], [], [],
+    (), [Local Scheduler], [*ET*], [], [], [], [], cm, [], [], [], cm, cm, cm, cm, [], [], [],
+    (), [Disaggregated Arch], na, [], [], [], [], [], [], [], cm, cm, [], cm, cm, [], [], [],
+    (), [Instance Flip], na, [], [], [], [], [], [],[], [], cm, [], cm, [], [], [], [],
+    (), [Request Migration], na,  [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
+    (), [Global Profiling], [*P*], [], [], [], cm, [], [], [], cm, cm, [], [], cm, [], [], [],
+
 
     // (), [Logging], [*P*], [], [], [], [], [], [], [], [], cm,
 
-    rowspanx(3)[*Pipeline\ Parallelism*], [Iteration-Level Batch], na, [], first, cm, [], cm, [], cm, cm, [], cm, cm, cm, cm, [],
-    (), [Chunked Prefill], na, [], [], [], [], [], [], first, [], [], cm, cm, cm, [], [],
-    (), [Prepack Prefill], na, [], [], [], [], [],  [],[], cm, [], cm, [], [], [], [],
+    rowspanx(3)[*Pipeline\ Parallelism*], [Iteration-Level Batch], na, [], first, cm, [], cm, [], cm, cm, [], [], cm, cm, cm, cm, [],
+    (), [Chunked Prefill], na, [], [], [], [], [], [], first, [], [], [], cm, cm, cm, [], [],
+    (), [Prepack Prefill], na, [], [], [], [], [],  [],[], cm, [], [], cm, [], [], [], [],
 
-    rowspanx(2)[*Tensor\ Parallelism*], [Tensor Parallelism], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], cm,
-    (), [SafeTensors], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+    rowspanx(2)[*Tensor\ Parallelism*], [Tensor Parallelism], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+    (), [SafeTensors], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
 
-    [*Verification*], [Open Source], [*V*], [], [], [], [], [], [], [], [], [], cm, cm, [], [], [],
+    rowspanx(1)[*Sequence Parallelism*], [Sequence Parallelism], na, [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
 
-    [*Miscellaneous*], [Speculation], [*S*], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+    [*Verification*], [Open Source], [*V*], [], [], [], [], [], [], [], [], [], [], cm, cm, [], [], [],
+
+    [*Miscellaneous*], [Speculation], [*S*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
     )
   ]
 ]
