@@ -66,3 +66,18 @@ $$
 用 sin + cos
 
 相当于把位置信息编码成了一个高维空间中的一个点，更好的进行线性组合
+
+I am preparing to begin an internship as a Privacy Protection Engineer.
+
+In this role, my responsibility will be to analyze official technology requirements from major companies such as Apple and Google. I will then evaluate public available cloud service optimization solutions(public literatures and open-source projects) to determine if they align with these requirements. If they do not align, I will write a report to explain the gaps and analyze the potential risks. If they do align, I will write a report to explain the benefits. These findings does not involve any confidential information or any relationship with IU.
+
+Hi Jim,
+
+I plan to start an internship as a Privacy Protection Engineer. In this role, I will be analyzing official technology requirements from major companies such as Apple and Google. My tasks will involve evaluating publicly available cloud service optimization solutions, including literature and open-source projects, to determine their alignment with these requirements. Should the solutions not align, I will prepare a report outlining the gaps and potential privacy risks. Conversely, if they do align, I will draft a report detailing the benefits.I would like to confirm that these findings will not include any confidential information or involve any association with IU.
+
+Could you please provide guidance on whether there are any specific protocols or additional considerations I should be aware of regarding this process? If necessary, I will give up this internship opportunity.
+
+Thank you very much for your assistance and support. I greatly appreciate your time and help.
+
+Best regards,
+Jiale

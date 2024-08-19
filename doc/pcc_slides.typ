@@ -18,6 +18,27 @@
   date: datetime.today(),
   // institution: [Institution],
 )
+
+#(
+  s.methods.outline-slide = (self: none, ..args) => {
+    (self.methods.slide)(
+      self: self,
+      setting: columns.with(2),
+      heading(level: 2, self.outline-title) + parbreak() + (self.methods.touying-outline)(self: self, cover: false),
+    )
+  }
+)
+#(
+  s.methods.touying-new-section-slide = (self: none, section) => {
+    (self.methods.slide)(
+      self: self,
+      setting: columns.with(2),
+      section: section,
+      heading(level: 2, self.outline-title) + parbreak() + (self.methods.touying-outline)(self: self),
+    )
+  }
+)
+
 #let (init, slides, touying-outline, alert, speaker-note) = utils.methods(s)
 #show: init
 
@@ -26,43 +47,13 @@
 #let (slide, empty-slide, title-slide, new-section-slide, focus-slide) = utils.slides(s)
 #show: slides
 
-= Privacy Leakage Surface
+#let footnote_link(content, url) = {
+  footnote(numbering: "*")[
+    #set text(size: 12pt)
+    #link(url)[#content]
+  ]
+}
 
-== Architecture
-
-#let fletcher-diagram = touying-reducer.with(reduce: fletcher.diagram, cover: fletcher.hide)
-
-#let architecture_graph = fletcher-diagram(
-  let main_row = 1,
-  let upper_row = 0,
-  let lower_row = 2,
-  let left_col = 0,
-  let middle_col = 3,
-  let right_col = 6,
-
-  let user = (left_col, main_row),
-  let scheduler = (middle_col, main_row),
-  let worker_a = (right_col, upper_row),
-  let worker_b = (right_col, lower_row),
-
-  node-corner-radius: 4pt,
-  node(user, [*User*]),
-  node(scheduler, [*Scheduler*]),
-  node(worker_a, [*Worker A*]),
-  node(worker_b, [*Worker B*]),
-
-  edge(user, scheduler, "-|>", [Input], shift: 3pt, label-side: left),
-  edge(scheduler, user, "-|>", [Output], shift: 3pt, label-side: left),
-  edge(scheduler, worker_a, "-|>", [Task], shift: 3pt, label-side: left),
-  edge(worker_a, scheduler, "-|>", [Result], shift: 3pt, label-side: left),
-  edge(scheduler, worker_b, "-|>", [Task], shift: 3pt, label-side: left),
-  edge(worker_b, scheduler, "-|>", [Result], shift: 3pt, label-side: left),
-  edge(worker_a, worker_b, "-|>", [Data], shift: 3pt, label-side: left),
-  edge(worker_b, worker_a, "-|>", [Data], shift: 3pt, label-side: left),
-)
-#slide[
-  #architecture_graph
-]
 
 = Private Cloud Compute
 == Taxonomy
@@ -113,6 +104,7 @@
 == Requirements
 
 === Stateless computation
+
 #slide[
   Private Cloud Compute must use the personal user data that it receives exclusively for the purpose of fulfilling the user's request. This data must never be available to anyone other than the user, not even to Apple staff, not even during active processing. And *this data must not be retained*, including via logging or for debugging, after the response is returned to the user. In other words, we want a strong form of stateless data processing where *personal data leaves no trace* in the PCC system.
 ]
@@ -141,24 +133,191 @@
   Security researchers need to be able to verify, with a high degree of confidence, that our privacy and security guarantees for Private Cloud Compute match our public promises. We already have an earlier requirement for our guarantees to be enforceable. Hypothetically, then, if security researchers had sufficient access to the system, they would be able to verify the guarantees. But this last requirement, verifiable transparency, goes one step further and does away with the hypothetical: security researchers must be able to verify the security and privacy guarantees of Private Cloud Compute, and they must be able to verify that the software that's running in the PCC production environment is the same as the software they inspected when verifying the guarantees.
 ]
 
-
 = LLM Serving Systems
 
-== Optimization Goals
+// == Architecture
+
+// #let fletcher-diagram = touying-reducer.with(reduce: fletcher.diagram, cover: fletcher.hide)
+
+// #let architecture_graph = fletcher-diagram(
+//   let main_row = 1,
+//   let upper_row = 0,
+//   let lower_row = 2,
+//   let left_col = 0,
+//   let middle_col = 3,
+//   let right_col = 6,
+
+//   let user = (left_col, main_row),
+//   let scheduler = (middle_col, main_row),
+//   let worker_a = (right_col, upper_row),
+//   let worker_b = (right_col, lower_row),
+
+//   node-corner-radius: 4pt,
+//   node(user, [*User*]),
+//   node(scheduler, [*Scheduler*]),
+//   node(worker_a, [*Worker A*]),
+//   node(worker_b, [*Worker B*]),
+
+//   edge(user, scheduler, "-|>", [Input], shift: 3pt, label-side: left),
+//   edge(scheduler, user, "-|>", [Output], shift: 3pt, label-side: left),
+//   edge(scheduler, worker_a, "-|>", [Task], shift: 3pt, label-side: left),
+//   edge(worker_a, scheduler, "-|>", [Result], shift: 3pt, label-side: left),
+//   edge(scheduler, worker_b, "-|>", [Task], shift: 3pt, label-side: left),
+//   edge(worker_b, scheduler, "-|>", [Result], shift: 3pt, label-side: left),
+//   edge(worker_a, worker_b, "-|>", [Data], shift: 3pt, label-side: left),
+//   edge(worker_b, worker_a, "-|>", [Data], shift: 3pt, label-side: left),
+// )
+// #slide[
+//   #architecture_graph
+// ]
+
+=== LLM Inference
 
 #slide[
-  - Lower resource requirements
-    - Model compression
-    - Collaborative inference
-    - Offloading to CPU and disk
-  - Higher throughput
-    - Batch
-    - Tensor parallelism
-    - Sequence parallelism (Input sequence)
-    - Pipeline parallelism (Stage placement)
-  - Lower latency
-    -
+  Most of the popular decoder-only LLMs (GPT-3, for example) are pretrained on the causal modeling objective, essentially as next-word predictors. These LLMs take a series of tokens as inputs, and generate subsequent tokens autoregressively until they meet a stopping criteria.
 ]
+
+== Prefill Phase: Processing the input
+
+In the prefill phase, the LLM processes the input tokens to compute the intermediate states (keys and values), which are used to generate the “first” new token. Each new token depends on all the previous tokens, but because the full extent of the input is known, at a high level this is a matrix-matrix operation that's *highly parallelized*. It effectively *saturates GPU utilization*.
+
+== Decode Phase: Generating the output
+
+#slide[
+  #set text(size: 14pt)
+  In the decode phase, the LLM generates output tokens autoregressively one at a time, until a stopping criteria is met. Each sequential output token needs to know all the previous iterations' output states (keys and values). This is like a matrix-vector operation that underutilizes the GPU compute ability compared to the prefill phase. The speed at which the data (weights, keys, values, activations) is *transferred to the GPU from memory* dominates the latency, not how fast the computation actually happens. In other words, this is a *memory-bound operation*.
+][
+  // Splitwise: Efficient Generative LLM Inference Using Phase Splitting
+  #figure(image("png/memory_usage.png", width: 80%))
+]
+
+= Optimization Techniques
+== Parallelism
+#slide[
+  #set text(size: 16pt)
+  === Pipeline Parallelism
+
+  Pipeline parallelism involves sharding the model (vertically) into chunks, where each chunk comprises a subset of layers that is executed on a separate device.
+][
+  #set text(size: 16pt)
+  === Tensor Parallelism
+
+  Tensor parallelism involves sharding the model (horizontally) into chunks, where each chunk comprises a subset of the model's parameters.
+][
+  #set text(size: 16pt)
+  === Sequence Parallelism
+
+  Sequence parallelism involves sharding the input sequence into chunks,
+
+]
+
+== Memory Optimizations
+=== KV Cache
+
+#slide[
+  #set text(size: 12pt)
+  #figure(image("png/kvcache_final.gif", height: 50%))
+
+  Transformers use attention mechanisms that compute attention scores between tokens. The KV Cache helps by storing previously computed key-value pairs, allowing the model to quickly access and reuse them for new tokens, avoiding redundant calculations.
+
+][
+  #set text(size: 12pt)
+  #figure(image("png/memory_layout.png", height: 40%))
+
+  \
+  \
+
+  Memory layout when serving an LLM with 13B parameters on NVIDIA A100. The parameters (gray) persist in GPU memory throughout serving. The memory for the KV cache (red) is (de)allocated per serving request. A small amount of memory (yellow) is used ephemerally for activation.
+]
+
+=== Paged Attention#footnote_link("Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180")
+
+#slide[
+  #set text(size: 14pt)
+  Paged Attention is a technique that divides the attention matrix into smaller pages, which are processed sequentially. This allows the model to process large attention matrices that do not fit in GPU memory.
+
+  #figure(
+    image("png/paged_attention_waste.png", width: 90%),
+  )
+]
+
+#slide[
+  #figure(
+    image("png/paged_attention.png", width: 90%),
+  )
+]
+
+
+=== Group-query Attention#footnote_link("GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints", "https://arxiv.org/abs/2305.13245")
+#slide[
+  #set text(size: 14pt)
+
+  - Multi-Query Attention: Reuse the same attention matrix for multiple queries.
+  - Group-Query Attention: Divide queries into groups and compute attention for each group separately.
+
+  #figure(
+    image("png/grouped-query.png", width: 60%),
+  )
+
+  // https://arxiv.org/pdf/2305.13245
+]
+
+
+
+=== Flash Attention#footnote_link("FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", "https://arxiv.org/abs/2205.14135")
+#slide[
+  // #set text(size: 14pt)
+  *GPU*: One kind of computation done on the input data at a time in sequence
+
+  *Fusing*: Fusing multiple layers together during the actual computation can enable minimizing the data access by GPUs.
+
+  FlashAttention uses *tiling* to fully compute and write out a small part of the final matrix at once
+
+][
+  #figure(
+    image("png/flashAttention.png"),
+  )
+]
+
+
+
+== Model Optimizations
+#slide[
+  === Quantization
+  Quantization is the process of reducing the precision of a model’s weights and activations. 
+
+
+][
+  === Sparsity
+  Sparsity is the process of setting a portion of the model’s weights to zero. Then the model can be expressed as a sparse matrix.
+
+][
+  === Distillation
+  Distillation is the process of training a smaller model to mimic the behavior of a larger model.
+]
+
+== Model Serving
+
+=== (Continous) Batch
+
+#slide[
+  #set text(size: 14pt)
+  *Batch*: A group of requests that are processed together. The batch size is the number of requests in a batch.
+
+  *Continous Batch*: A batch that is continuously processed, with new requests being added to the batch as they arrive.
+]
+
+=== Speculative Inference#footnote_link("Blockwise Parallel Decoding for Deep Autoregressive Models", "https://arxiv.org/abs/1811.03115")
+
+#slide[
+  A draft model temporarily predicts multiple future steps that are verified or rejected in parallel.
+
+  #figure(
+    image("png/speculative.png", width: 60%),
+  )
+]
+
+= Threats
 
 == Violations
 
@@ -189,38 +348,8 @@
 ]
 
 
-#slide[
-  #let cm = emoji.checkmark.heavy
+=== Summary
 
-  #set text(size: 14pt)
-  #tablex(
-  columns: 6,
-  align: center + horizon,
-  auto-vlines: false,
-  // repeat-header: true,
-
-  /* --- header --- */
-  [*Requirement*], [*Violations*], [*FT\ 22*], [*FlexGen\ 23*], [*Sarathi\ 23*],[*Mooncake\ 24*],
-  /* -------------- */
-
-  rowspanx(2)[Stateless computation], [Logging], [], [], [],  [],
-  (), [History metadata], [], [], [], [],
-
-  rowspanx(2)[Enforceable guarantees], [Data transfer/duplication], [], [],  [],cm,
-  (), [Data offloading], [], cm, [], cm,
-
-  rowspanx(3)[No privileged runtime access], [Monitoring], [], [], [], [],
-  (), [Debugging], [], [], [], [],
-  (), [Offline Profiling], [], [], [], cm,
-
-  rowspanx(2)[Non-targetability], [Priority-based scheduler], [], [], [], [#cm\ length],
-  (), [Input/output leakage], [], [], [], [],
-
-  [Verifiable transparency], [Uninspected code], [], [], [], cm,
-  )
-]
-
-== Optimizations
 #slide[
   #[
     #set text(size: 12pt)
@@ -229,24 +358,18 @@
     *P*: No privileged runtime access
     *T*: Non-targetability
     *V*: Verifiable transparency
-
   ]
 
   #[
-    #set text(size: 10pt)
-    #let cm = emoji.checkmark.heavy
-    #let first = "Initial"
-    #let na = ""
-
     #let model_header(name, year) = {
       let len
       let size
 
       len = name.len()
       if len > 5 {
-        size = 8pt
+        size = 7pt
       } else {
-        size = 10pt
+        size = 8pt
       }
 
       set text(size: size)
@@ -255,16 +378,21 @@
       year = str(year)
       len = year.len()
       if len > 5 {
-        size = 8pt
+        size = 7pt
       } else {
-        size = 10pt
+        size = 8pt
       }
       set text(size: size)
-      year
+      [#year]
     }
 
+    #set text(size: 9pt)
+    #let cm = emoji.checkmark.heavy
+    #let first = "Initial"
+    #let na = ""
+
     #tablex(
-    columns: 14,
+    columns: 17,
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
@@ -274,43 +402,86 @@
     [*Optimization*],
     [*Threat*],
     model_header("FT", 22),
-    // [*Orca*\ 22],
     model_header("Orca", 22),
     model_header("vLLM", 23),
     model_header("FlexGen", 23),
     model_header("FastServe", 23),
+    model_header("Some23", 23),
     model_header("Sarathi", 23),
     model_header("DistServe", 24),
+    model_header("Splitwise", 24),
     model_header("TetriInfer", 24),
     model_header("Mooncake", "Moonshot"),
     model_header("DeepSpeed", "Microsoft"),
-    model_header("TensorRT-LLM", "NVIDIA"),
+    model_header("TensorRT", "NVIDIA"),
+    model_header("TGI", "Hugging Face"),
     // link("https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fastgen")[*DeepSpeed*\ Microsoft],
     // link("https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/overview.md")[*TensorRT*\ NVIDIA],
     /* -------------- */
 
-    rowspanx(4)[*Storage*\ (KVCache)], [Paging], na, [], [], first, [], [], cm, [], [], cm, cm, [],
-    (), [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], cm, [], cm,
-    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], cm, [], [],
-    (), [Pulling], [*SET*], [], [], [], [], [], [], cm, [], [], [], [],
-    // (), [Model Compression], na, [], [], [], [], [], [], [], [], [], [], [],
+    rowspanx(3)[*Memory*], [Paging], na, [], [], first, [], [], [], cm, [], [], cm, cm, cm, [], cm,
+    (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
+    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
 
-    rowspanx(5)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], cm, cm, [], cm, cm, cm, [],
-    (), [Local Scheduler], [*ET*], [], [], [], [], cm, [], [], cm, cm, [], [],
-    (), [Instance Flip], [*P*], [], [], [], [], [], [], [], cm, [], [], [],
-    (), [Disaggregated Arch], na, [], [], [], [], [], [], cm, cm, cm, [], [],
-    (), [Online/Offline Profiling], [*P*], [], [], [], [], [], [], cm, [], cm, [], [],
+    rowspanx(3)[*Tranmission*], [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], [], [], cm, [], cm, [],
+    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
+    (), [Pulling], [*SET*], [], [], [], [], [], [], [], cm, [], [], [], [], [], [],
+
+    rowspanx(6)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], cm, [], cm, [], [], cm, cm, cm, [], [],
+    (), [Request-Level Prediction], [*T*], [], [], [], [], cm, [], [], [], [], cm, [], [], [], [],
+    (), [Local Scheduler], [*ET*], [], [], [], [], cm, [], [], [], cm, cm, cm, [], [], [],
+    (), [Disaggregated Arch], na, [], [], [], [], [], [], [], cm, cm, cm, cm, [], [], [],
+    (), [Instance Flip], [], [], [], [], [], [], [],[], [], cm, cm, [], [], [], [],
+    (), [Global Profiling], [*P*], [], [], [], cm, [], [], [], cm, cm, [], cm, [], [], [],
 
     // (), [Logging], [*P*], [], [], [], [], [], [], [], [], cm,
 
-    rowspanx(3)[*PP*], [Iteration-Level Batch], na, [], first, cm, [], cm, cm, cm, cm, cm, cm, cm,
-    (), [Chunked Prefill], na, [], [], [], [], [], first, [], cm, cm, cm, [],
-    (), [Prepack Prefill], na, [], [], [], [], [], [], cm, cm, [], [], [],
+    rowspanx(3)[*Pipeline\ Parallelism*], [Iteration-Level Batch], na, [], first, cm, [], cm, [], cm, cm, [], cm, cm, cm, cm, [],
+    (), [Chunked Prefill], na, [], [], [], [], [], [], first, [], [], cm, cm, cm, [], [],
+    (), [Prepack Prefill], na, [], [], [], [], [],  [],[], cm, [], cm, [], [], [], [],
 
-    [*Verification*], [Uninspected Code], [*V*], [], [], [], [], [], [], [], [], cm, [], [],
+    rowspanx(2)[*Tensor\ Parallelism*], [Tensor Parallelism], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], cm,
+    (), [SafeTensors], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+
+    [*Verification*], [Open Source], [*V*], [], [], [], [], [], [], [], [], [], cm, cm, [], [], [],
+
+    [*Miscellaneous*], [Speculation], [*S*], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
     )
   ]
 ]
+
+=== Other Optimizations
+
+*Prompt Cache*: [Prefill, Memory] Reuse attention states across different LLM prompts. Parse the prompt and use reusable text segments(snippet)
+
+*Layer-wise Transmission*: [Transmission] Transmit each layer's output to the next layer in the pipeline, instead of transmitting the entire model's output.
+
+=== Production LLMs
+
+#slide[
+  #set text(size: 14pt)
+  TorchServe - PyTorch
+
+  Prompt Cache
+
+  SplitWise
+
+  InfiniteLLM
+
+  SGLang
+
+  AttentionStore
+
+  Preble
+
+  Pollux
+
+  Attmemo : Accelerating transformers with memoiza- tion on big memory systems
+
+  *Refer to DistServe Related Work*
+]
+
+== Threats
 
 === Paging & Offloading
 
@@ -348,6 +519,7 @@
   - Local Scheduler: 在本地节点上调度任务，以减少任务调度的延迟。
 
   Threats:
+
   （优先级调度）
   - 可能通过观察任务的优先级来推断任务的重要性和敏感性，从而有针对性地进行攻击。
   - 在任务调度过程中，任务的调度信息（如任务类型、数据类型等）可能被泄露，导致隐私数据暴露。'
@@ -385,26 +557,9 @@
   - N/A.
 ]
 
-=== Production LLMs
-
-#slide[
-  TorchServe - PyTorch
-
-  Triton
-  HuggingFace TGI
-  FastServe
 
 
 
-  Prompt Cache
-  SGLang
-  AttentionStore
-  Preble
-
-  Pollux
-
-  *Refer to DistServe Related Work*
-]
 
 
 #focus-slide[
@@ -415,8 +570,10 @@
 #let s = (s.methods.appendix)(self: s)
 #let (slide, empty-slide) = utils.slides(s)
 
-// = Appendix
+= Appendix
 
-// === Appendix
+== References
 
-// ]
+#slide[
+  https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/
+]
