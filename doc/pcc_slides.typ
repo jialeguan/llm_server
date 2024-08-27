@@ -192,24 +192,48 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 ]
 
 = Optimization Techniques
-== Parallelism
+
+== Batch Processing
+
+=== (Continous) Batch
+
 #slide[
-  #set text(size: 16pt)
+  #set text(size: 14pt)
+  *Batch*: A group of requests that are processed together. The batch size is the number of requests in a batch.
+
+  *Continous Batch*: A batch that is continuously processed, with new requests being added to the batch as they arrive.
+]
+
+
+== Parallel Processing
+ 
+#slide[
+  #set text(size: 14pt)
   === Pipeline Parallelism
 
-  Pipeline parallelism involves sharding the model (vertically) into chunks, where each chunk comprises a subset of layers that is executed on a separate device.
+  PP involves sharding the model (vertically) into chunks, where each chunk comprises a subset of layers that is executed on a separate device.
 ][
-  #set text(size: 16pt)
+  #set text(size: 14pt)
   === Tensor Parallelism
 
-  Tensor parallelism involves sharding the model (horizontally) into chunks, where each chunk comprises a subset of the model's parameters.
+  TP involves sharding the model (horizontally) into chunks, where each chunk comprises a subset of the model's parameters.
 ][
-  #set text(size: 16pt)
+  #set text(size: 14pt)
   === Sequence Parallelism
 
-  Sequence parallelism involves sharding the input sequence into chunks,
-
+  SP involves sharding the input sequence into chunks, where each chunk is processed by a separate device.
 ]
+
+=== Speculative Inference#footnote_link("Blockwise Parallel Decoding for Deep Autoregressive Models", "https://arxiv.org/abs/1811.03115")
+
+#slide[
+  A draft model temporarily predicts multiple future steps that are verified or rejected in parallel.
+
+  #figure(
+    image("png/speculative.png", width: 60%),
+  )
+]
+
 
 == Memory Optimizations
 === KV Cache
@@ -262,7 +286,16 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
   // https://arxiv.org/pdf/2305.13245
 ]
 
+=== Prefix Caching
 
+#slide[
+  #set text(size: 14pt)
+  Prefix Caching is a technique that caches the intermediate states of the model during the prefill phase. These states are then reused during the decode phase to speed up inference.
+
+  // #figure(
+  //   image("png/prefix_caching.png", width: 60%),
+  // )
+]
 
 === Flash Attention#footnote_link("FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", "https://arxiv.org/abs/2205.14135")
 #slide[
@@ -279,7 +312,15 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
   )
 ]
 
+== Transmission Optimizations
 
+=== KV Cache Offloading
+
+#slide[
+  #set text(size: 14pt)
+  The KV Cache Offloading technique moves the KV cache from the GPU to the CPU to free up GPU memory for other tasks.
+
+]
 
 == Model Optimizations
 #slide[
@@ -296,63 +337,41 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
   Distillation is the process of training a smaller model to mimic the behavior of a larger model.
 ]
 
-== Model Serving
-
-=== (Continous) Batch
-
-#slide[
-  #set text(size: 14pt)
-  *Batch*: A group of requests that are processed together. The batch size is the number of requests in a batch.
-
-  *Continous Batch*: A batch that is continuously processed, with new requests being added to the batch as they arrive.
-]
-
-=== Speculative Inference#footnote_link("Blockwise Parallel Decoding for Deep Autoregressive Models", "https://arxiv.org/abs/1811.03115")
-
-#slide[
-  A draft model temporarily predicts multiple future steps that are verified or rejected in parallel.
-
-  #figure(
-    image("png/speculative.png", width: 60%),
-  )
-]
 
 = Threats
 
-== Violations
+// == Violations
 
-#slide[
-  #set text(size: 14pt)
-  #tablex(
-  columns: 2,
-  align: center + horizon,
-  auto-vlines: false,
-  repeat-header: true,
+// #slide[
+//   #set text(size: 14pt)
+//   #tablex(
+//   columns: 2,
+//   align: center + horizon,
+//   auto-vlines: false,
+//   repeat-header: true,
 
-  /* --- header --- */
-  [*Requirement*], [*Violations*],
-  /* -------------- */
+//   /* --- header --- */
+//   [*Requirement*], [*Violations*],
+//   /* -------------- */
 
-  [Stateless computation], [Logging, prioritization, history metadata],
+//   [Stateless computation], [Logging, prioritization, history metadata],
 
-  [Enforceable guarantees], [Data transfer/duplication, data offloading, access control],
+//   [Enforceable guarantees], [Data transfer/duplication, data offloading, access control],
 
-  [No privileged runtime access], [Monitoring, debugging, profiling],
+//   [No privileged runtime access], [Monitoring, debugging, profiling],
 
-  [Non-targetability], [Biased scheduler, input/output leakage],
+//   [Non-targetability], [Biased scheduler, input/output leakage],
 
-  [Verifiable transparency], [Uninspected code],
-  )
+//   [Verifiable transparency], [Uninspected code],
+//   )
 
-  Universal problems: Access control between worker nodes.
-]
+//   Universal problems: Access control between worker nodes.
+// ]
 
-
-=== Summary
-
+== Academic Systems
 #slide[
   #[
-    #set text(size: 12pt)
+    #set text(size: 9pt)
     *S*: Stateless computation
     *E*: Enforceable guarantees
     *P*: No privileged runtime access
@@ -362,37 +381,19 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 
   #[
     #let model_header(name, year) = {
-      let len
-      let size
-
-      len = name.len()
-      if len > 5 {
-        size = 6pt
-      } else {
-        size = 7pt
-      }
-
+      let size = 4pt
       set text(size: size)
       [*#name*\ ]
-
-      year = str(year)
-      len = year.len()
-      if len > 5 {
-        size = 6pt
-      } else {
-        size = 7pt
-      }
-      set text(size: size)
       [#year]
     }
 
-    #set text(size: 7pt)
+    #set text(size: 4pt)
     #let cm = emoji.checkmark.heavy
     #let first = "Initial"
     #let na = ""
 
     #tablex(
-    columns: 18,
+    columns: 19,
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
@@ -408,52 +409,222 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
     model_header("FastServe", 23),
     model_header("Some23", 23),
     model_header("Sarathi", 23),
+    model_header("Lookahead", 24),
+    model_header("REST", 24),
+    model_header("SpecInfer", 24),
+    model_header("Medusa", 24),
     model_header("DistServe", 24),
     model_header("Splitwise", 24),
     model_header("LoongServe", 24),
     model_header("TetriInfer", 24),
+    model_header("InfiniteLLM", 24),
+
+    /* -------------- */
+
+    rowspanx(3)[*Batch*], [Iteration-Level Batch], na, [], first, cm, [], cm, [], cm, [], [], [], [], cm, [], [], cm, [], 
+    (), [Chunked Prefill], na, [], [], [], [], [], [], first, [], [], [], [], [], [], [], cm, [], 
+    (), [Prepack Prefill], na, [], [], [], [], [],  [],[], [], [], cm, [], cm, [], [], cm, [], 
+
+    rowspanx(6)[*Parallel*], [Speculation], [*S*], [], [], [], [], [], [], [], cm, cm, cm, cm, [], [], [], [], [],
+    (),  [Prompt-Based Speculation], [*S*], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [],
+    (),  [Context-Based Speculation], [*S*], [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [],
+    (), [Tensor Parallelism], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    (), [SafeTensors], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], 
+    (), [Sequence Parallelism], na, [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], 
+
+    rowspanx(3)[*Memory*], [Paging], na, [], [], first, [], [], [], cm, [], [], [], [], [], [], [], cm, [], 
+    (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], 
+
+    rowspanx(5)[*Tranmission*], [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], [], [], [], [], [], [], [], [], 
+    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    (), [Pulling], [*SET*], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [], 
+    (), [Request Migration], na,  [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], 
+    (), [Disaggregated Arch], na, [], [], [], [], [], [], [], [], [], [], [], cm, cm, [], cm, [], 
+
+    rowspanx(5)[*Scheduling*], [Priority-Based], [*T*], [], [], [], [], cm, [], cm, [], [], [], [], [], [], [], cm, [], 
+    (), [Request-Level Prediction], [*T*], [], [], [], [], cm, [], [], [], [], [Small Model], [], [], [], [], cm, [],
+    (), [Machine-level Scheduler], [*ET*], [], [], [], [], cm, [], [], [], [], [], [], [], cm, cm, cm, cm,
+    (), [Instance Flip], na, [], [], [], [], [], [],[], [], [], [], [], [], cm, [], cm, [],
+    (), [Global Profiling], [*P*], [], [], [], cm, [], [], [], [], [], [], [], cm, cm, [], [], [], 
+
+    [*Verification*], [Open Source], [*V*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], 
+    )
+  ]
+]
+
+== Industrial Systems
+#slide[
+  #[
+    #set text(size: 12pt)
+    *S*: Stateless computation
+    *E*: Enforceable guarantees
+    *P*: No privileged runtime access
+    *T*: Non-targetability
+    *V*: Verifiable transparency
+  ]
+
+  #[
+    #let model_header(name, year) = {
+      let size = 4pt
+      set text(size: size)
+      [*#name*\ ]
+      [#year]
+    }
+
+    #set text(size: 4pt)
+    #let cm = emoji.checkmark.heavy
+    #let first = "Initial"
+    #let na = ""
+
+    #tablex(
+    columns: 7,
+    align: center + horizon,
+    auto-vlines: false,
+    // repeat-header: true,
+
+    /* --- header --- */
+    [*Type*],
+    [*Optimization*],
+    [*Threat*],
     model_header("Mooncake", "Moonshot"),
     model_header("DeepSpeed", "Microsoft"),
     model_header("TensorRT", "NVIDIA"),
     model_header("TGI", "Hugging Face"),
-    // link("https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fastgen")[*DeepSpeed*\ Microsoft],
-    // link("https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/overview.md")[*TensorRT*\ NVIDIA],
+
     /* -------------- */
 
-    rowspanx(3)[*Memory*], [Paging], na, [], [], first, [], [], [], cm, [], [], [], cm, cm, cm, [], cm,
-    (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
-    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
+    rowspanx(3)[*Batch*], [Iteration-Level Batch], na, cm, cm, cm, [],
+    (), [Chunked Prefill], na, cm, cm, [], [],
+    (), [Prepack Prefill], na, [], [], [], [],
 
-    rowspanx(3)[*Tranmission*], [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], [], [], [], cm, [], cm, [],
-    (), [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
-    (), [Pulling], [*SET*], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [],
+    rowspanx(4)[*Parallel*], [Speculation], [*S*], [], [], [], cm,
+    (), [Tensor Parallelism], na, [], [], [], cm,
+    (), [SafeTensors], na, [], [], [], cm,
+    (), [Sequence Parallelism], na, [], [], [], [],
 
-    rowspanx(7)[*Scheduler*], [Priority-Based], [*T*], [], [], [], [], cm, [], cm, [], [], [], cm, cm, cm, [], [],
-    (), [Request-Level Prediction], [*T*], [], [], [], [], cm, [], [], [], [], [], cm, [], [], [], [],
-    (), [Local Scheduler], [*ET*], [], [], [], [], cm, [], [], [], cm, cm, cm, cm, [], [], [],
-    (), [Disaggregated Arch], na, [], [], [], [], [], [], [], cm, cm, [], cm, cm, [], [], [],
-    (), [Instance Flip], na, [], [], [], [], [], [],[], [], cm, [], cm, [], [], [], [],
-    (), [Request Migration], na,  [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
-    (), [Global Profiling], [*P*], [], [], [], cm, [], [], [], cm, cm, [], [], cm, [], [], [],
+    rowspanx(3)[*Memory*], [Paging], na, cm, cm, [], cm,
+    (), [Multi-Query Attention], na, [], [], cm, [],
+    (), [Grouped-Query Attention], [*T*], [], [], cm, [],
 
+    rowspanx(5)[*Tranmission*], [Offloading], [*SE*], cm, [], cm, [],
+    (), [Duplication], [*T*], cm, [], [], [],
+    (), [Pulling], [*SET*], [], [], [], [],
+    (), [Request Migration], na, [], [], [], [],
+    (), [Disaggregated Arch], na, cm, [], [], [],
 
-    // (), [Logging], [*P*], [], [], [], [], [], [], [], [], cm,
+    rowspanx(5)[*Scheduling*], [Priority-Based], [*T*], cm, cm, [], [],
+    (), [Request-Level Prediction], [*T*], [], [], [], [],
+    (), [Machine-level Scheduler], [*ET*], cm, [], [], [],
+    (), [Instance Flip], na, [], [], [], [],
+    (), [Global Profiling], [*P*], cm, [], [], [],
 
-    rowspanx(3)[*Pipeline\ Parallelism*], [Iteration-Level Batch], na, [], first, cm, [], cm, [], cm, cm, [], [], cm, cm, cm, cm, [],
-    (), [Chunked Prefill], na, [], [], [], [], [], [], first, [], [], [], cm, cm, cm, [], [],
-    (), [Prepack Prefill], na, [], [], [], [], [],  [],[], cm, [], [], cm, [], [], [], [],
-
-    rowspanx(2)[*Tensor\ Parallelism*], [Tensor Parallelism], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
-    (), [SafeTensors], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
-
-    rowspanx(1)[*Sequence Parallelism*], [Sequence Parallelism], na, [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
-
-    [*Verification*], [Open Source], [*V*], [], [], [], [], [], [], [], [], [], [], cm, cm, [], [], [],
-
-    [*Miscellaneous*], [Speculation], [*S*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+    [*Verification*], [Open Source], [*V*], cm, [], [], [],
     )
   ]
 ]
+
+//     // link("https://github.com/microsoft/DeepSpeed/tree/master/blogs/deepspeed-fastgen")[*DeepSpeed*\ Microsoft],
+    // link("https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/overview.md")[*TensorRT*\ NVIDIA],
+// #slide[
+//   #[
+//     #set text(size: 12pt)
+//     *S*: Stateless computation
+//     *E*: Enforceable guarantees
+//     *P*: No privileged runtime access
+//     *T*: Non-targetability
+//     *V*: Verifiable transparency
+//   ]
+
+//   #[
+//     #let model_header(name, year) = {
+//       let len
+//       let size
+
+//       len = name.len()
+//       if len > 5 {
+//         size = 6pt
+//       } else {
+//         size = 7pt
+//       }
+
+//       set text(size: size)
+//       [*#name*\ ]
+
+//       year = str(year)
+//       len = year.len()
+//       if len > 5 {
+//         size = 3pt
+//       } else {
+//         size = 4pt
+//       }
+//       set text(size: size)
+//       [#year]
+//     }
+
+//     #set text(size: 4pt)
+//     #let cm = emoji.checkmark.heavy
+//     #let first = "Initial"
+//     #let na = ""
+
+//     #tablex(
+//     columns: 19,
+//     align: center + horizon,
+//     auto-vlines: false,
+//     // repeat-header: true,
+
+//     /* --- header --- */
+//     [*Type*],
+//     [*Optimization*],
+//     [*Threat*],
+//     model_header("FT", 22),
+//     model_header("Orca", 22),
+//     model_header("vLLM", 23),
+//     model_header("FlexGen", 23),
+//     model_header("FastServe", 23),
+//     model_header("Some23", 23),
+//     model_header("Sarathi", 23),
+//     model_header("DistServe", 24),
+//     model_header("Splitwise", 24),
+//     model_header("LoongServe", 24),
+//     model_header("TetriInfer", 24),
+//     model_header("InfiniteLLM", 24),
+//     model_header("Mooncake", "Moonshot"),
+//     model_header("DeepSpeed", "Microsoft"),
+//     model_header("TensorRT", "NVIDIA"),
+//     model_header("TGI", "Hugging Face"),
+
+//     /* -------------- */
+
+//     rowspanx(3)[*Batch*], [Iteration-Level Batch], na, [], first, cm, [], cm, [], cm, cm, [], [], cm, [], cm, cm, cm, [],
+//     (), [Chunked Prefill], na, [], [], [], [], [], [], first, [], [], [], cm, [], cm, cm, [], [],
+//     (), [Prepack Prefill], na, [], [], [], [], [],  [],[], cm, [], [], cm, [], [], [], [], [],
+
+//     rowspanx(4)[*Parallel*], [Speculation], [*S*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+//     (), [Tensor Parallelism], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+//     (), [SafeTensors], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm,
+//     (), [Sequence Parallelism], na, [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [],
+
+//     rowspanx(3)[*Memory*], [Paging], na, [], [], first, [], [], [], cm, [], [], [], cm, [], cm, cm, [], cm,
+//     (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
+//     (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [],
+
+//     rowspanx(5)[*Tranmission*], [Offloading], [*SE*], [], [], [], cm, cm, [], [], [], [], [], [], [], cm, [], cm, [],
+//     (), [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
+//     (), [Pulling], [*SET*], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [],
+//     (), [Request Migration], na,  [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [],
+//     (), [Disaggregated Arch], na, [], [], [], [], [], [], [], cm, cm, [], cm, [], cm, [], [], [],
+
+//     rowspanx(5)[*Scheduling*], [Priority-Based], [*T*], [], [], [], [], cm, [], cm, [], [], [], cm, [], cm, cm, [], [],
+//     (), [Request-Level Prediction], [*T*], [], [], [], [], cm, [], [], [], [], [], cm, [], [], [], [], [],
+//     (), [Machine-level Scheduler], [*ET*], [], [], [], [], cm, [], [], [], cm, cm, cm, cm, cm, [], [], [],
+//     (), [Instance Flip], na, [], [], [], [], [], [],[], [], cm, [], cm, [], [], [], [], [],
+//     (), [Global Profiling], [*P*], [], [], [], cm, [], [], [], cm, cm, [], [], [], cm, [], [], [],
+
+//     [*Verification*], [Open Source], [*V*], [], [], [], [], [], [], [], [], [], [], cm, [], cm, [], [], [],
+//     )
+//   ]
+// ]
 
 === Other Optimizations
 
@@ -467,12 +638,6 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
   #set text(size: 14pt)
   TorchServe - PyTorch
 
-  Prompt Cache
-
-  SplitWise
-
-  InfiniteLLM
-
   SGLang
 
   AttentionStore
@@ -481,7 +646,7 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 
   Pollux
 
-  Attmemo : Accelerating transformers with memoiza- tion on big memory systems
+  AttmemoAccelerating transformers with memoiza- tion on big memory systems
 
   *Refer to DistServe Related Work*
 ]
@@ -534,7 +699,7 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
   - 为了减少调度延迟，可能会牺牲一些数据同步和一致性机制，导致数据不一致。
   （节点翻转）
   - 攻击者可能修改恶意节点的数据，来让恶意节点被选中执行任务，从而获取敏感信息。
-  - 攻击者可能通过控制节点翻转的时机，来获取敏感信息。
+  - 攻击者可能通过控制节点翻转的时机，来获取敏感信息-。
 ]
 
 === Disaggregated Architecture & Online/Offline Profiling
