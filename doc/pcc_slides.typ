@@ -381,13 +381,13 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 
   #[
     #let model_header(name, year) = {
-      let size = 4pt
+      let size = 6pt
       set text(size: size)
       [*#name*\ ]
       [#year]
     }
 
-    #set text(size: 4pt)
+    #set text(size: 6pt)
     #let cm = emoji.checkmark.heavy
     #let first = "Initial"
     #let na = ""
