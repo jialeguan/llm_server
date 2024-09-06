@@ -1,2 +1,9 @@
 .DS_STORE
 .idea
+
+# latex
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
