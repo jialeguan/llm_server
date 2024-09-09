@@ -299,7 +299,8 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 
 === Flash Attention#footnote_link("FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", "https://arxiv.org/abs/2205.14135")
 #slide[
-  // #set text(size: 14pt)
+  // 主要是为了解决长序列的问题，把query分成tile，交给多个线程处理，然后再合并结果
+  #set text(size: 16pt)
   *GPU*: One kind of computation done on the input data at a time in sequence
 
   *Fusing*: Fusing multiple layers together during the actual computation can enable minimizing the data access by GPUs.
