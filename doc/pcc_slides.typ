@@ -192,6 +192,64 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 ]
 
 = Optimization Techniques
+== Overview
+#slide[
+
+  #let half-red = red.transparentize(50%)
+
+    #set text(size: 10pt)
+    #let pos = block(fill: green.transparentize(50%))[+]
+    #let neg = block(fill: red.transparentize(50%))[-]
+    #let que = block(fill: gray.transparentize(50%))[?]
+    #let na = ""
+
+
+    #tablex(
+    columns: 8,
+    align: center + horizon,
+    auto-vlines: false,
+    // repeat-header: true,
+
+    /* --- header --- */
+    [*Category*],
+    [*Optimization*],
+    [*Compute*],
+    [*Memory*],
+    [*Transmission*],
+    [*Throughput*],
+    [*TTFT*],
+    [*TBT*],
+
+    /* -------------- */ 
+    rowspanx(3)[*Batch*], [Iteration-Level Batch], pos, pos, pos, pos, neg, neg,
+    (), [Chunked Prefill], pos, pos, [], pos, pos, pos,
+    (), [Prepack Prefill], pos, [], [], pos, neg, [],
+
+    rowspanx(4)[*Parallelism*], [Pipeline Parallelism], pos, [], neg, pos, neg, que,
+    (), [Tensor Parallelism], pos, [], neg, pos, neg, pos,
+    (), [Sequence Parallelism], pos, [], neg, pos, pos, que,
+    (), [Speculative Inference], pos, neg, neg, pos, pos, pos,
+
+
+    rowspanx(5)[*Memory*], [Paging], [], pos, [], pos, [], [],
+    (), [Disk Offloading], [], pos, neg, pos, [], [],
+    (), [Prefix Caching], [], pos, [], pos, [], [],
+    (), [Multi-Query Attention], pos, pos, [], pos, pos, pos,
+    (), [Group-Query Attention], pos, pos, [], pos, pos, pos,
+
+    rowspanx(4)[*Tranmission*], [Duplication], pos, neg, pos, pos, pos, pos,
+    (), [Pulling], pos, neg, pos, pos, pos, pos,
+    (), [Request Migration], pos, pos, neg, pos, pos, pos,
+    (), [Disaggregated Arch], pos, pos, neg, pos, neg, neg,
+
+    // rowspanx(5)[*Scheduling*], [Priority-Based], [], pos,
+    // (), [Request-Level Prediction], [], pos,
+    // (), [Machine-level Scheduler], [], pos,
+    // (), [Instance Flip], [], pos,
+    // (), [Global Profiling], [], pos,
+
+    )
+]
 
 == Batch Processing
 
@@ -199,9 +257,9 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 
 #slide[
   #set text(size: 14pt)
-  *Batch*: A group of requests that are processed together. The batch size is the number of requests in a batch.
+  *Batch*: A group of requests that are processed together. 
 
-  *Continous Batch*: A batch that is continuously processed, with new requests being added to the batch as they arrive.
+  *Continous Batch*: A batch that is continuously processed, leveraging the opportunity by batching new requests once some old requests are finished
 ]
 
 
@@ -227,10 +285,15 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 === Speculative Inference#footnote_link("Blockwise Parallel Decoding for Deep Autoregressive Models", "https://arxiv.org/abs/1811.03115")
 
 #slide[
+  #set text(size: 14pt)
   A draft model temporarily predicts multiple future steps that are verified or rejected in parallel.
 
+  Benefits:
+  1. *Parallel token generation*: Multiple candidate tokens are predicted simultaneously, speeding up inference.
+  2. *Reduced sequential dependence*: Parallel generation reduces the need to wait for each token to be computed one at a time.
+][
   #figure(
-    image("png/speculative.png", width: 60%),
+    image("png/speculative.png", width: 90%),
   )
 ]
 
@@ -276,7 +339,8 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
 #slide[
   #set text(size: 14pt)
 
-  - Multi-Query Attention: Reuse the same attention matrix for multiple queries.
+  - Standard Attention: Compute attention for each query separately. Complexity is $O(n^2)$.
+  - Multi-Query Attention: Reuse the same attention matrix for multiple queries. Queries are similar enough to share the same attention distribution.
   - Group-Query Attention: Divide queries into groups and compute attention for each group separately.
 
   #figure(
@@ -452,7 +516,7 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
     (), [Prefix Caching], [*SE*], [], [], [], [], [], [], [], cm, cm, [], [], [], [], [], [], [], [], [], [],
     // (), [Radix Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [Multi-Query Attention], na, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    (), [Group-Query Attention], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
 
 
     rowspanx(4)[*Tranmission*], [Duplication], [*T*], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
@@ -551,7 +615,7 @@ In the prefill phase, the LLM processes the input tokens to compute the intermed
     (), [Token Attention], na, [], cm, [], [], [], [], [], [], [], [], [], [],
     (), [Storage Offloading], [*SE*], [], [], [], cm, [], cm, [], [], [], [], [], cm,
     (), [Multi-Query Attention], na, [], [], [], [], [], cm, [], [], [], [], [], [],
-    (), [Grouped-Query Attention], [*T*], [], [], [], [], [], cm, [], [], [], [], [], [],
+    (), [Group-Query Attention], [*T*], [], [], [], [], [], cm, [], [], [], [], [], [],
     (), [Prefix Caching], na, cm, [], [], [], [], [], [], [], [], [], [], [],
 
     rowspanx(4)[*Tranmission*], [Duplication], [*T*], [], [], [], cm, [], [], [], [], [], [], [], [],
