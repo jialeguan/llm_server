@@ -172,39 +172,62 @@
   Most of the popular decoder-only LLMs (GPT-3, for example) are pretrained on the causal modeling objective, essentially as next-word predictors. These LLMs take a series of tokens as inputs, and generate subsequent tokens autoregressively until they meet a stopping criteria.
 ]
 
-== Prefill Phase
+== Phases
 
 #slide[
-  = Processing the input
-  #set text(size: 16pt)
-  In the prefill phase, the LLM processes the input tokens to compute the intermediate states (keys and values), which are used to generate the “first” new token. Each new token depends on all the previous tokens, but because the full extent of the input is known, at a high level this is a matrix-matrix operation that's *highly parallelized*. It effectively *saturates GPU utilization*.
+  #let text_size = 12pt
+  = Prefill: Processing the input
+  #[
+    #set text(size: text_size)
+    In the prefill phase, the LLM processes the input tokens to compute the intermediate states (keys and values), which are used to generate the “first” new token. Each new token depends on all the previous tokens, but because the full extent of the input is known, at a high level this is a matrix-matrix operation that's *highly parallelized*. It effectively *saturates GPU utilization*.
+  ]
+  = Decode: Generating the output
+  #[
+    #set text(size: text_size)
+    In the decode phase, the LLM generates output tokens autoregressively one at a time, until a stopping criteria is met. Each sequential output token needs to know all the previous iterations' output states (keys and values). This is like a matrix-vector operation that underutilizes the GPU compute ability compared to the prefill phase. The speed at which the data (weights, keys, values, activations) is *transferred to the GPU from memory* dominates the latency, not how fast the computation actually happens. In other words, this is a *memory-bound operation*.
+  ]
+  // #figure(image("png/memory_usage.png", width: 60%))
+][
+  #figure(image("png/two_phase.png", width: 90%))
+]
+// [
+// // Splitwise: Efficient Generative LLM Inference Using Phase Splitting
+
+// // 1.	Prompt phase（蓝色点，prefill阶段）：
+// // •	内存稳定：从图中可以看到，在prefill阶段（模型开始接受输入直到生成第一个token），内存占用保持相对较低并且稳定（大约在300GB左右）。这表明，在这个阶段，大部分内存占用可能来自于模型参数的加载和初始化，输入token数量对内存占用影响不大。
+// // •	少量增长：随着batch size增加，内存占用有少量增长，但整体增长较为平缓，表明输入tokens在这个阶段不会对内存需求产生太大的变化。
+// // 2.	Token phase（橙色点，decode阶段）：
+// // •	内存增长显著：与prefill阶段不同，在decode阶段内存占用随着batch size的增加而显著增长。这是因为decode阶段每次生成一个新的token时，需要持续保留前面生成的所有tokens的上下文，并依赖这些信息来推理下一个token，因此内存需求会随着生成的tokens数量累积。
+// // •	指数增长：图中的曲线展示了decode阶段的内存占用在tokens数量较大时呈现出接近指数式增长，表明随着生成更多的token，内存需求急剧上升。
+
+
+// #set text(size: 12pt)
+
+// = Prefill (Prompt) Phase
+// The graph indicates that most of the memory usage in this phase may come from loading and initializing the model parameters, and the number of input tokens has little impact on memory usage.
+
+// = Decode (Token) Phase
+// In contrast, memory usage during the decode phase increases, as the model needs to retain the context of all previously generated tokens to infer the next token. The memory requirement increases significantly with the number of generated tokens.
+// ]
+
+== Challenges
+
+#slide[
+  = Workload Heterogeneity
+  Universality and application diversity lead to heterogeneity of the inference requests, in terms of input lengths, output lengths, expected latencies, etc
+  = Execution Unpredictability
+  Unknown a priori how many tokens will be generated before the stopping criteria is met. As such, the execution time and the resource demand of a request are both unpredictable.
+  = Multi-Tenant and Dynamic Environment
+  The system must scale to support multiple users and adapt to the dynamic nature of the environment.
 ]
 
-== Decode Phase
-
 #slide[
-  #set text(size: 12pt)
-  = Generating the output
-  In the decode phase, the LLM generates output tokens autoregressively one at a time, until a stopping criteria is met. Each sequential output token needs to know all the previous iterations' output states (keys and values). This is like a matrix-vector operation that underutilizes the GPU compute ability compared to the prefill phase. The speed at which the data (weights, keys, values, activations) is *transferred to the GPU from memory* dominates the latency, not how fast the computation actually happens. In other words, this is a *memory-bound operation*.
-  #figure(image("png/memory_usage.png", width: 60%))
-][
-  // Splitwise: Efficient Generative LLM Inference Using Phase Splitting
-
-  // 1.	Prompt phase（蓝色点，prefill阶段）：
-  // •	内存稳定：从图中可以看到，在prefill阶段（模型开始接受输入直到生成第一个token），内存占用保持相对较低并且稳定（大约在300GB左右）。这表明，在这个阶段，大部分内存占用可能来自于模型参数的加载和初始化，输入token数量对内存占用影响不大。
-  // •	少量增长：随着batch size增加，内存占用有少量增长，但整体增长较为平缓，表明输入tokens在这个阶段不会对内存需求产生太大的变化。
-  // 2.	Token phase（橙色点，decode阶段）：
-  // •	内存增长显著：与prefill阶段不同，在decode阶段内存占用随着batch size的增加而显著增长。这是因为decode阶段每次生成一个新的token时，需要持续保留前面生成的所有tokens的上下文，并依赖这些信息来推理下一个token，因此内存需求会随着生成的tokens数量累积。
-  // •	指数增长：图中的曲线展示了decode阶段的内存占用在tokens数量较大时呈现出接近指数式增长，表明随着生成更多的token，内存需求急剧上升。
-
-
-  #set text(size: 12pt)
-
-  = Prefill (Prompt) Phase
-  The graph indicates that most of the memory usage in this phase may come from loading and initializing the model parameters, and the number of input tokens has little impact on memory usage.
-
-  = Decode (Token) Phase
-  In contrast, memory usage during the decode phase increases, as the model needs to retain the context of all previously generated tokens to infer the next token. The memory requirement increases significantly with the number of generated tokens.
+  = Queuing Delays
+  The system must handle queuing delays, which can be caused by the system being overloaded or by the system waiting for external resources.
+  = Preemptions
+  The system must handle preemption, which can be caused by the system being overloaded or by the system waiting for external resources.
+  = Interference
+  Interference between requests can lead to performance degradation.
 ]
 
 = Optimizations
@@ -226,17 +249,17 @@
 
 == Parallel Processing
 #slide[
-  #set text(size: 18pt)
+  #set text(size: 14pt)
   = Pipeline Parallelism
 
   PP involves sharding the model (vertically) into chunks, where each chunk comprises a subset of layers that is executed on a separate device.
 ][
-  #set text(size: 18pt)
+  #set text(size: 14pt)
   = Tensor Parallelism
 
   TP involves sharding the model (horizontally) into chunks, where each chunk comprises a subset of the model's parameters.
 ][
-  #set text(size: 18pt)
+  #set text(size: 14pt)
   = Sequence Parallelism
 
   SP involves sharding the input sequence into chunks, where each chunk is processed by a separate device.
@@ -245,13 +268,13 @@
 == Speculative Inference
 
 #slide[
-  #set text(size: 12pt)
+  #set text(size: 14pt)
   = Standard inference
   Sequence generation is strictly sequential. Each token must be generated based on the previously generated token, which leads to high latency, especially for long-sequence tasks.
 
 
 ][
-  #set text(size: 12pt)
+  #set text(size: 14pt)
   == Speculative inference#footnote_link("Blockwise Parallel Decoding for Deep Autoregressive Models", "https://arxiv.org/abs/1811.03115")
   - *Predict multiple tokens ahead*: When generating the first token, the model simultaneously makes speculative predictions about the next several tokens.
   - *Parallel processing*: These speculative predictions allow the model to process multiple possible outcomes in parallel, speeding up the inference.
@@ -302,7 +325,7 @@
 #slide[
   = Paged Attention
   #set text(size: 14pt)
-  Paged Attention#footnote_link("Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180") is a technique that divides the attention matrix into smaller pages, which are processed sequentially. This allows the model to process large attention matrices that do not fit in GPU memory.
+  Paged Attention#footnote_link("Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180") is a technique that divides the attention matrix into smaller pages. This approach provides a near-perfect solution for mitigating fragmentation and hence, PagedAttention has become the de facto standard for dynamic memory allocation in LLM serving systems.
 
   #figure(
     image("png/paged_attention_waste.png", width: 90%),
@@ -311,9 +334,15 @@
 
 #slide[
   = Paged Attention (cont.)
+  #set text(size: 12pt)
   #figure(
-    image("png/paged_attention.png", width: 90%),
+    image("png/paged_attention.png", width: 80%),
   )
+
+  *Pitfalls*#footnote_link("vAttention: Dynamic Memory Management for Serving LLMs without PagedAttention. 2024","https://arxiv.org/abs/2405.04437")
+  - Requires re-writing the attention kernel.
+  - Adds software complexity and redundancy (CPU code), can degrade throughput by 11%.
+  - Introduces performance overhead. 20-26% slower than original FasterTransformer kernel.
 ]
 
 #slide[
@@ -323,9 +352,9 @@
   - *Standard Attention*: Compute attention for each query separately. Complexity is $O(n^2)$.
   - *Multi-Query Attention*: Reuse the same attention matrix for multiple queries. Queries are similar enough to share the same attention distribution.
   - *Group-Query Attention*#footnote_link("GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints", "https://arxiv.org/abs/2305.13245"): Divide queries into groups and compute attention for each group separately.
-
+][
   #figure(
-    image("png/grouped-query.png", width: 50%),
+    image("png/grouped-query.png", width: 90%),
   )
 
   // https://arxiv.org/pdf/2305.13245
@@ -334,11 +363,11 @@
 #slide[
   = Prefix Caching
   #set text(size: 14pt)
-  Prefix Caching is a technique that caches the intermediate states of the model during the prefill phase. These states are then reused during the decode phase to speed up inference.
+  Prefix Caching#footnote_link("ChunkAttention: Efficient Self-Attention with Prefix-Aware KV Cache and Two-Phase Partition. 2024", "https://arxiv.org/abs/2402.15220") is a technique that caches the intermediate states of the model during the prefill phase. These states are then reused during the decode phase to speed up inference.
 
-  // #figure(
-  //   image("png/prefix_caching.png", width: 60%),
-  // )
+  #figure(
+    image("png/prefix_caching.png", width: 60%),
+  )
 ]
 
 #slide[
@@ -361,6 +390,14 @@
   = KV Cache Offloading
   #set text(size: 14pt)
   The KV Cache Offloading technique moves the KV cache from the GPU to the CPU to free up GPU memory for other tasks.
+  \
+  \
+
+  #figure(
+    image("png/memory_architecture.png", width: 50%),
+  )
+][
+
 ]
 
 == Miscellaneous
@@ -376,16 +413,6 @@
 ][
   = Distillation
   Distillation is the process of training a smaller model to mimic the behavior of a larger model.
-]
-
-#slide[
-  = Cross Region & Cloud
-  #set text(size: 14pt)
-  *Cross Region*: Distributing the model across multiple regions to reduce latency and improve availability.
-
-  *Cloud*: Using cloud services to offload the model computation to reduce the load on the on-premises servers.
-
-  SkyPilot
 ]
 
 == Summary
@@ -442,7 +469,7 @@
     (), [Speculative Inference], pos, neg, [], pos, [], pos,
 
 
-    rowspanx(5)[*Memory*], [Paging], [], pos, [], pos, [], [],
+    rowspanx(5)[*Memory*], [Paging], neg, pos, [], pos, [], [],
     (), [Prefix Caching], [], pos, [], pos, [], [],
     (), [Disk Offloading], [], pos, neg, pos, [], [],
     (), [Multi-Query Attention], [], pos, [], pos, pos, pos,
@@ -468,14 +495,14 @@
 
 == Academic Systems
 #slide[
-  #[
-    #set text(size: 7pt)
-    *S*: Stateless computation
-    *E*: Enforceable guarantees
-    *P*: No privileged runtime access
-    *T*: Non-targetability
-    *V*: Verifiable transparency
-  ]
+  // #[
+  //   #set text(size: 7pt)
+  //   *S*: Stateless computation
+  //   *E*: Enforceable guarantees
+  //   *P*: No privileged runtime access
+  //   *T*: Non-targetability
+  //   *V*: Verifiable transparency
+  // ]
 
   #[
     #let model_header(name, year, url) = {
@@ -491,7 +518,7 @@
     #let na = ""
 
     #tablex(
-    columns: 21,
+    columns: 22,
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
@@ -517,60 +544,61 @@
     model_header("TetriInfer", 2401, "https://arxiv.org/abs/2401.11181"),
     model_header("AttentionStore", 2403, "https://arxiv.org/abs/2403.19708v2"),
     model_header("LoongServe", 2404, "https://arxiv.org/abs/2404.09526"),
-    model_header("vAttention", 2405, "https://arxiv.org/abs/2405.04437"),
+    model_header("Andes", 2405, "https://arxiv.org/abs/2404.16283"),
+    model_header("Llumnix", 2406, "https://arxiv.org/abs/2406.03243"),
     model_header("Preble", 2407, "https://arxiv.org/abs/2407.00023"),
 
     /* -------------- */
 
     rowspanx(3)[*Batch*], [Iteration-Level Batch], na,
-    f1, [], cm, cm, cm, [], [], [], [], cm, [], cm, [], cm, [], [], [], [],
+    f1, [], cm, cm, cm, [], [], [], [], cm, [], cm, [], cm, [], [], [], [], [],
     (), [Chunked Prefill], na,
-    [], [], [], [], [], [], [], [], [], f1, [], [], [], cm, [], [], [], cm,
+    [], [], [], [], [], [], [], [], [], f1, [], [], [], cm, [], [], [], [], cm,
     (), [Prepack Prefill], na,
-    [], [], [], [], [], [], [], [], [], [], [], cm, [], cm, [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], cm, [], cm, [], [], [], [], [],
 
     rowspanx(6)[*Parallelism*], [Speculation], [*S*],
-    [], [], [], cm, [], cm, [], cm, cm, [], [], [], cm, [], [], [], [], [],
+    [], [], [], cm, [], cm, [], cm, cm, [], [], [], cm, [], [], [], [], [], [],
     (), [Context-Based Speculation], [*S*],
-    [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [Prompt-Based Speculation], [*S*],
-    [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [],
+    [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [],
     (), [Tensor Parallelism], na,
-    [], [], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [SafeTensors], na,
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [Sequence Parallelism], na,
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
 
     rowspanx(3)[*Memory*], [Paging], na,
-    [], [], [], [], f1, [], [], cm, [], cm, [], [], [], cm, [], [], [], [],
+    [], [], [], [], f1, [], [], cm, [], cm, [], [], [], cm, [], [], [], [], [],
     (), [Prefix Caching], [*SE*],
-    [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], cm,
+    [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [], cm,
     (), [Disk Offloading], [*SE*],
-    [], cm, cm, [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
+    [], cm, [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [],
 
     rowspanx(4)[*Tranmission*], [Duplication], [*T*],
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [Pulling], [*SET*],
-    [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [],
     (), [Request Migration], na,
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], cm, [],
     (), [Disaggregated Arch], na,
-    [], [], [], [], [], [], cm, [], [], [], [], cm, [], cm, [], [], [], [],
+    [], [], [], [], [], [], cm, [], [], [], [], cm, [], cm, [], [], [], [], [],
 
     rowspanx(5)[*Scheduling*], [Priority-Based], [*T*],
-    [], [], cm, [], [], [], [], cm, [], cm, [], [], [], cm, [], [], [], cm,
+    [], [], cm, [], [], [], [], cm, [], cm, [], [], [], cm, [], [], cm, cm, cm,
     (), [Request-Level Prediction], [*T*],
-    [], [], cm, cm, [], [], [], [], [], [], [], [], [], cm, [], [], [], [],
+    [], [], cm, cm, [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
     (), [Machine-level Scheduler], [*ET*],
-    [], [], cm, [], [], [], cm, [], [], [], cm, [], [], cm, [], cm, [], cm,
+    [], [], cm, [], [], [], cm, [], [], [], cm, [], [], cm, [], cm, [], [], cm,
     (), [Instance Flip], na,
-    [], [], [], [], [], [], cm, [], [], [], [], [], [], cm, [], [], [], [],
+    [], [], [], [], [], [], cm, [], [], [], [], [], [], cm, [], [], [], [], [],
     (), [Global Profiling], [*P*],
-    [], cm, [], [], [], [], cm, [], [], [], [], cm, [], [], [], [], [], [],
+    [], cm, [], [], [], [], cm, [], [], [], [], cm, [], [], [], [], [], [], [],
 
     [*Verification*], [Open Source], [*V*],
-    [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
     )
   ]
 
@@ -591,22 +619,35 @@
     [*LightLLM*], [Interface], [Use http as the interface to the system],
     [*SkyPilot*], [Cross Region & Cloud], [Given a job and its resource requirements (CPU/GPU/TPU), SkyPilot automatically figures out which locations (zone/region/cloud) have the compute to run the job, then sends it to the cheapest one to execute],
     [*MLC LLM*], [Efficient Execution], [Enable efficient execution of large language models across a wide range of hardware platforms, including mobile devices, edge devices, and even web browsers],
+    [*vAttention*], [Virtual Memory], [stores KV-cache in contiguous
+virtual memory and leverages OS support for on-demand
+allocation of physical memory],
+    [*MemServe*], [API, Framework], [an elastic memory pool API managing distributed memory and KV caches across serving instances],
+    [*CacheGen*], [Network, Streaming], [CacheGen uses a custom tensor encoder, leveraging KV cache's
+distributional properties to encode a KV cache into more compact
+bitstream representations]
     )
-
-  MemServe
 ]
+
+  // DL Serving: AlpaServe, Pollux
+
+  // Attention Serving: AttMemo, Ring Attention
+
+  // LLM Serving Fairness: VTC
+
+  // GPU Communication Lantencies: Flux(TP)
 
 == Industrial Systems
 
 #slide[
-  #[
-    #set text(size: 7pt)
-    *S*: Stateless computation
-    *E*: Enforceable guarantees
-    *P*: No privileged runtime access
-    *T*: Non-targetability
-    *V*: Verifiable transparency
-  ]
+  // #[
+  //   #set text(size: 7pt)
+  //   *S*: Stateless computation
+  //   *E*: Enforceable guarantees
+  //   *P*: No privileged runtime access
+  //   *T*: Non-targetability
+  //   *V*: Verifiable transparency
+  // ]
 
   #[
     #let model_header(name, year) = {
@@ -616,7 +657,7 @@
       [#year]
     }
 
-    #set text(size: 6pt)
+    #set text(size: 4pt)
     #let cm = emoji.checkmark.heavy
     #let f1 = "Initial"
     #let na = ""
@@ -653,10 +694,8 @@
     (), [Prepack Prefill], na,
     [], [], [], [], [], [], [], [], [], [], [], [], [],
 
-    rowspanx(5)[*Parallelism*], [Speculation], [*S*],
+    rowspanx(4)[*Parallelism*], [Speculation], [*S*],
     cm, [], cm, cm, [], [], cm, cm, [], [], [], cm, cm,
-    (), [Medusa], na,
-    [], [], [], [], [], [], [], cm, [], [], [], cm, [],
     (), [Tensor Parallelism], na,
     [], [], [], [], [], [], [], cm, [], [], [], [], cm,
     (), [SafeTensors], na,
@@ -708,19 +747,6 @@
   // https://github.com/vllm-project/vllm/issues/4104 相对于只缓存Prefix Cache，vLLM的Prefix Caching功能还缓存了Generated KV Cache
 ]
 
-
-
-
-#slide[
-  #set text(size: 14pt)
-  DL Serving: AlpaServe, Pollux
-
-  Attention Serving: AttMemo, Ring Attention
-
-  LLM Serving Fairness: VTC
-
-  GPU Communication Lantencies: Flux(TP)
-]
 
 == Reasoning
 
@@ -804,16 +830,15 @@
 
 #show: appendix
 = Appendix
-
-=== References
-
+== References
 #slide[
+  
   https://github.com/DefTruth/Awesome-LLM-Inference
 
   https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/
 ]
 
-=== Tools
+== Utilities
 
 https://github.com/Trusted-AI/adversarial-robustness-toolbox
 
