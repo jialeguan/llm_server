@@ -55,6 +55,8 @@
 }
 
 #let cm = emoji.checkmark.heavy
+#let cg = block(fill: green.transparentize(50%))[#cm]
+#let cr = block(fill: red.transparentize(50%))[#cm]
 #let na = ""
 
 = Private Cloud Compute
@@ -173,7 +175,10 @@
 == LLM Inference
 
 #slide[
+  #set text(size: 16pt)
   Most of the popular decoder-only LLMs (GPT-3, for example) are pretrained on the causal modeling objective, essentially as next-word predictors. These LLMs take a series of tokens as inputs, and generate subsequent tokens autoregressively until they meet a stopping criteria.
+
+  #figure(image("png/mindmap.png", width: 70%), caption: "LLM Inference", numbering: none)
 ]
 
 == Phases
@@ -236,7 +241,7 @@
 
 = Optimizations
 
-== Memory
+== Memory Management
 
 #slide[
   = KV Cache
@@ -256,6 +261,13 @@
 ]
 
 #slide[
+  #set text(size: 16pt)
+  LLM inference architecture primarily comprises multiple stacked decoder blocks, each consisting of a self-attention module and a Feed-Forward Neural Network (FFN) module.
+  #figure(image("png/kvcache_detail.png", width: 80%))
+  // InstInfer
+]
+
+#slide[
   = Paged Attention
   #set text(size: 14pt)
   Paged Attention#footnote_link("Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180") is a technique that divides the attention matrix into smaller pages. This approach provides a near-perfect solution for mitigating fragmentation and hence, PagedAttention has become the de facto standard for dynamic memory allocation in LLM serving systems.
@@ -266,7 +278,7 @@
 ]
 
 #slide[
-  = Paged Attention (cont.)
+  = Paged Attention
   #set text(size: 12pt)
   #figure(
     image("png/paged_attention.png", width: 80%),
@@ -314,9 +326,7 @@
   FlashAttention#footnote_link("FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", "https://arxiv.org/abs/2205.14135") uses *tiling* to fully compute and write out a small part of the final matrix at once
 
 ][
-  #figure(
-    image("png/flashAttention.png"),
-  )
+  #figure(image("png/flashAttention.png"))
 ]
 
 #slide[
@@ -326,11 +336,16 @@
   \
   \
 
-  #figure(
-    image("png/memory_architecture.png", width: 50%),
-  )
+  #figure(image("png/memory_architecture.png", width: 50%))
 ][
 ]
+
+#slide[
+  = Real-World System: Mooncake
+  #figure(image("png/pd.png", width: 50%))
+]
+
+
 
 == Batch Processing
 
@@ -342,7 +357,7 @@
 
     *Dynamic batching*: Prompts are batched together on the fly inside the server. Typically, this method performs worse than static batching but can get close to optimal if responses are short or of uniform length. Does not work well when requests have different parameters.
 
-    *Continous Batch*: A batch that is continuously processed, leveraging the opportunity by batching new requests once some old requests are finished
+    *Continous Batching*: A batch that is continuously processed, leveraging the opportunity by batching new requests once some old requests are finished
   ]][
   #figure(image("png/batch.png", width: 70%))
 ][
@@ -386,7 +401,7 @@
 
 #slide[
   #set text(size: 12pt)
-  Algorithm#footnote_link("Accelerating Large Language Model Decoding with Speculative Sampling, 2023", "https://arxiv.org/abs/2302.01318") is as follows:
+  Algorithm#footnote_link("Accelerating Large Language Model Decoding with Speculative Sampling, 2023", "https://arxiv.org/abs/2302.01318")
 
   - $p$ is the smaller draft model, $q$ is the larger target model.
   #figure(
@@ -399,13 +414,21 @@
   )
 ]
 
-#slide[
-  = Medusa
-  #set text(size: 14pt)
-  Medusa is a system that uses *speculative inference* to generate multiple tokens in parallel. It uses a *speculative model* to predict multiple tokens ahead and then validates the predicted paths to avoid redundant calculations.
-]
+// #slide[
+//   = Medusa
+//   #set text(size: 14pt)
+//   Medusa is a system that uses *speculative inference* to generate multiple tokens in parallel. It uses a *speculative model* to predict multiple tokens ahead and then validates the predicted paths to avoid redundant calculations.
+// ]
 
 == Summary
+#slide[
+  = Real-World System: Mooncake
+  #set text(size: 14pt)
+  Gray: Control plane
+  #figure(image("png/mooncake.png", width: 50%))
+]
+
+
 #slide[
   = Stateful Inference Systems
   #set text(size: 16pt)
@@ -421,7 +444,7 @@
   iteration.
 ]
 
-#slide[
+#slide(composer: (5fr, 3fr))[
   #set text(size: 10pt)
 
   #let half-red = red.transparentize(50%)
@@ -434,7 +457,7 @@
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
-    vlinex(x: 5, stroke: gray),
+    vlinex(x: 5),
 
     /* --- header --- */
     rowspanx(2)[*Category*], rowspanx(2)[*Optimization*], colspanx(3)[*GPU Resources*], colspanx(3)[*Optimization Goal*],
@@ -447,17 +470,7 @@
     [*TBT*],
 
     /* -------------- */
-    rowspanx(3)[*Batch*], [Iteration-Level Batch], pos, [], pos, pos, neg, neg,
-    (), [Chunked Prefill], pos, [], [], pos, pos, pos,
-    (), [Prepack Prefill], pos, [], [], pos, neg, [],
-
-    rowspanx(4)[*Parallelism*], [Pipeline Parallelism], pos, [], neg, pos, neg, que,
-    (), [Tensor Parallelism], pos, [], neg, pos, neg, pos,
-    (), [Sequence Parallelism], pos, [], neg, pos, pos, que,
-    (), [Speculative Inference], pos, neg, [], pos, [], pos,
-
-
-    rowspanx(5)[*Memory*], [Paging], neg, pos, [], pos, [], [],
+      rowspanx(5)[*Memory*], [Paging], neg, pos, [], pos, [], [],
     (), [Prefix Caching], [], pos, [], pos, [], [],
     (), [Disk Offloading], [], pos, neg, pos, [], [],
     (), [Multi-Query Attention], [], pos, [], pos, pos, pos,
@@ -468,13 +481,56 @@
     (), [Request Migration], pos, pos, neg, pos, pos, pos,
     (), [Disaggregated Arch], pos, pos, pos, pos, neg, neg,
 
+    rowspanx(3)[*Batch*], [Iteration-Level Batch], pos, [], pos, pos, neg, neg,
+    (), [Chunked Prefill], pos, [], [], pos, pos, pos,
+    (), [Prepack Prefill], pos, [], [], pos, neg, [],
+
+    rowspanx(4)[*Parallelism*], [Pipeline Parallelism], pos, [], neg, pos, neg, que,
+    (), [Tensor Parallelism], pos, [], neg, pos, neg, pos,
+    (), [Sequence Parallelism], pos, [], neg, pos, pos, que,
+    (), [Speculative Inference], pos, neg, [], pos, [], pos,
+
     // rowspanx(5)[*Scheduling*], [Priority-Based], [], pos,
     // (), [Request-Level Prediction], [], pos,
     // (), [Machine-level Scheduler], [], pos,
     // (), [Instance Flip], [], pos,
     // (), [Global Profiling], [], pos,
-
     )
+][
+
+]
+
+#slide[
+  = Trends
+  #set text(size: 14pt)
+
+  #tablex(
+    columns: 4,
+    align: center + horizon,
+
+    auto-vlines: false,
+    //
+    /* --- header --- */
+    [*Category*],
+    [*Trend*],
+    [*Examples*],
+    [*Conflict*],
+
+    /* -------------- */
+
+    [*Memory*], [Enhanced memory management with finer granularity\ Improve reusability of KV Cache], [Paging\ Token-Level Optimization], [*S*],
+    [*Transmission*], [Minimizing transmission latency], [Data Duplication\ Prefetching\ PD Disaggregation], [*T*],
+    [*Scheduling*], [Customized scheduling for specific scenarios\ Cache-aware scheduler], [Request-level Predictions\ Machine-Level Scheduling\ Global profiling], [*STP*],
+    [*Parallelism*], [Optimizing parallelism for resource reuse and efficiency], [Pipeline Parallelism\ Tensor Parallelism\ Sequence Parallelism\ Speculative Inference], [*ST*],
+  )
+  #[
+    #set text(fill: luma(30%), size: 12pt)
+    S: Stateless computation
+    E: Enforceable guarantees
+    T: Non-targetability
+    P: No privileged runtime access
+    V: Verifiable transparency
+  ]
 ]
 
 = Threats
@@ -482,24 +538,25 @@
 == Stateless Computation
 
 #slide[
-  #set text(size: 12pt)
+  #set text(size: 14pt)
   = Requirement
   The system does not maintain any state between requests. Each request is processed independently, and the system does not store any information about previous requests.
 
-  = Threat Model
+  = Attacker's Capabilities
   - *Weak*: An attacker gains access to the system's storage mechanism, potentially compromising databases or disk storage. They can also query the system to infer the presence of sensitive information.
-  - *Medium*: An attacker gains control over specific nodes, allowing them to request or intercept data within the system. However, they are unable to directly access the original prompt due to model sharding or other security measures.
-  - *Strong*: In addition to the capabilities of a medium attacker, a strong attacker has direct access to the original prompt.
+  - *Strong*: An attacker gains control over specific nodes, allowing them to request or intercept data within the system. However, they are unable to directly access the original prompt due to model sharding or other security measures.
 
   = Overview of Threats
+  #set text(size: 12pt)
   #tablex(
+
     columns: 7,
     align: center + horizon,
 
     auto-vlines: false,
     //
     /* --- header --- */
-    [*Threat Model*],
+    [*Capabilities*],
     [*Goal*],
     [*Query*],
     [*Access to Storage*],
@@ -511,11 +568,9 @@
     [Weak], [Reconstructing User Inputs and Contexts],
     cm, cm, na, na, na,
 
-    [Medium], [Reconstructing User Inputs and Contexts], 
+    [Strong], [Reconstructing User Inputs and Contexts],
     cm, cm, cm, cm, na,
-    [Strong], [Manipulating Model Behaviors],
-    cm, cm, cm, cm, cm,
-    )
+  )
 ]
 
 #slide(composer: (2fr, 1fr))[
@@ -566,7 +621,7 @@
   = Targeted Data Extraction
   An attacker controlling a node could craft specific inputs designed to trigger the retrieval of cached prefixes. By doing this repeatedly, they can extract sensitive information from the cache based on the model's responses.
 
-  Example:  By submitting inputs like “My Social Security Number is...” and monitoring responses, they could *infer whether such a prefix was previously cached and what context or continuation it triggers*.
+  Example: By submitting inputs like “My Social Security Number is...” and monitoring responses, they could *infer whether such a prefix was previously cached and what context or continuation it triggers*.
 ][
   #set text(size: 14pt)
   = Cache Content Mapping
@@ -590,15 +645,15 @@
 
 
 #slide[
-  #set text(size: 10pt)
-  I: Inference Attack, R: Replay Attack, E: Targeted Data Extraction, M: Cache Content Mapping, P: Cache Poisoning, D: Denial of Service
+  #set text(size: 14pt)
+  I: Inference Attack, R: Replay Attack, E: Targeted Data Extraction, M: Cache Content Mapping
   #let half-red = red.transparentize(50%)
 
   #tablex(
-    columns: 10,
+    columns: 8,
     align: center + horizon,
     vlinex(x: 6),
-    vlinex(x: 8),
+
 
     auto-vlines: false,
     // repeat-header: true,
@@ -611,42 +666,36 @@
     rowspanx(2)[*Mitigation*],
     colspanx(2)[*Weak\ Attacker*],
     colspanx(2)[*Middle\ Attacker*],
-    colspanx(2)[*Strong\ Attacker*],
 
-    [I], [R], [E], [M], [P], [D],
+    [I], [R], [E], [M],
     /* -------------- */
 
     [Prefix Caching], [KV Cache], [GPU Memory\ CPU Memory], [Cache Expiry\ Isolation],
-    [], [], [], [], [], [],
+    [], [], [], [],
 
     [Disk Offloading], [KV Cache], [Disk Storage\ (SSD, Hard Drive)], [Encryption],
-    [], [], [], [], [], [],
+    [], [], [], [],
 
     [Pulling], [KV Cache], [GPU Memory\ CPU Memory], [Randomized Scheduler],
-    [], [], [], [], [], [], 
+    [], [], [], [],
 
-    [Database-based\ Speculative Inference], [KV Cache], [GPU Memory\ CPU Memory], [Differential Priavacy],
-    [], [], [], [], [], [], 
+    [Database-based\ Speculative Inference], [Token], [GPU Memory\ CPU Memory], [Differential Priavacy],
+    [], [], [], [],
   )
 ]
 
 
-
-== No Privileged Runtime Access
-
-#slide[
-  #set text(size: 16pt)
-  *No Privileged Runtime Access*: The system must not contain privileged interfaces that would enable Apple's site reliability staff to bypass PCC privacy
-
-  *Violations*:
-  Global Profiling
-]
-
 == Non-Targetability
 
 #slide[
-  #set text(size: 16pt)
+  #set text(size: 14pt)
   *Non-Targetability*: An attacker should not be able to attempt to compromise personal data that belongs to specific, targeted Private Cloud Compute users without attempting a broad compromise of the entire PCC system.
+
+  *Definition*: Let $S={S_1, S_2, dots, S_n}$ denote the set of all servers in the system, with the capability of each server $S_i$ represented by $C(S_i)$.
+  The set of requests handled by these servers is denoted as $R(S) = {R(S_1), R(S_2), dots, R(S_n)}$.
+  The system is considered non-targetable if, for any subset $T = {T_1, T_2, dots, T_m} subset.eq S$ of servers, the probability of compromising the data of a specific user $u$ is given by:
+
+  $ P(u in R(T)) = frac(sum_(i=1)^m C(T_i), sum_(i=1)^n C(S_i)) $
 
   *Violations*:
   Duplication
@@ -658,6 +707,16 @@
   Request-Level Prediction
 
   Machine-level Scheduler
+]
+
+== No Privileged Runtime Access
+
+#slide[
+  #set text(size: 16pt)
+  *No Privileged Runtime Access*: The system must not contain privileged interfaces that would enable Apple's site reliability staff to bypass PCC privacy
+
+  *Violations*:
+  Global Profiling
 ]
 
 == Enforceable Guarantees
@@ -706,11 +765,11 @@
       [#year]
     }
 
-    #set text(size: 5pt)
+    #set text(size: 7pt)
     #let f1 = "Initial"
 
     #tablex(
-    columns: 22,
+    columns: 23,
     align: center + horizon,
     auto-vlines: false,
     // repeat-header: true,
@@ -739,57 +798,56 @@
     model_header("Andes", 2405, "https://arxiv.org/abs/2404.16283"),
     model_header("Llumnix", 2406, "https://arxiv.org/abs/2406.03243"),
     model_header("Preble", 2407, "https://arxiv.org/abs/2407.00023"),
+    model_header("TokenRecycling", 2408, "https://www.arxiv.org/abs/2408.08696"),
 
     /* -------------- */
     rowspanx(3)[*Memory*], [Paging], na,
-    [], [], [], [], f1, [], [], cm, [], cm, [], [], [], cm, [], [], [], [], [],
+    [], [], [], [], f1, [], [], cg, [], cg, [], [], [], cg, [], [], [], [], [], [],
     (), [Prefix Caching], [*SE*],
-    [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [], cm,
+    [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [], [], cr, [],
     (), [Disk Offloading], [*SE*],
-    [], cm, [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [],
+    [], cr, [], [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [],
 
     rowspanx(4)[*Tranmission*], [Duplication], [*T*],
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [Pulling], [*SET*],
-    [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [], [],
     (), [Request Migration], na,
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], cm, [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cg, [], cg, [], [],
     (), [Disaggregated Arch], na,
-    [], [], [], [], [], [], cm, [], [], [], [], cm, [], cm, [], [], [], [], [],
+    [], [], [], [], [], [], cg, [], [], [], [], cg, [], cg, [], [], [], [], [], [],
 
     rowspanx(3)[*Batch*], [Iteration-Level Batch], na,
-    f1, [], cm, cm, cm, [], [], [], [], cm, [], cm, [], cm, [], [], [], [], [],
+    f1, [], cg, cg, cg, [], [], [], [], cg, [], cg, [], cg, [], [], [], [], [], [],
     (), [Chunked Prefill], na,
-    [], [], [], [], [], [], [], [], [], f1, [], [], [], cm, [], [], [], [], cm,
+    [], [], [], [], [], [], [], [], [], f1, [], [], [], cg, [], [], [], [], cg, [],
     (), [Prepack Prefill], na,
-    [], [], [], [], [], [], [], [], [], [], [], cm, [], cm, [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], cg, [], cg, [], [], [], [], [], [],
 
-    rowspanx(6)[*Parallelism*], [Speculation], [*S*],
-    [], [], [], cm, [], cm, [], cm, cm, [], [], [], cm, [], [], [], [], [], [],
+    rowspanx(5)[*Parallelism*], [Speculation], na,
+    [], [], [], cg, [], cg, [], cg, cg, [], [], [], cg, [], [], [], [], [], [], [],
     (), [Context-Based Speculation], [*S*],
-    [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [],
-    (), [Prompt-Based Speculation], [*S*],
-    [], [], [], [], [], [], [], [], cm, [], [], [], [], [], [], [], [], [], [],
+    [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    (), [Database-Based Speculation], [*S*],
+    [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [], [], cr,
     (), [Tensor Parallelism], na,
-    [], [], [], cm, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-    (), [SafeTensors], na,
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [], [], cg, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     (), [Sequence Parallelism], na,
-    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cg, [], [], [], [],
 
     rowspanx(5)[*Scheduling*], [Priority-Based], [*T*],
-    [], [], cm, [], [], [], [], cm, [], cm, [], [], [], cm, [], [], cm, cm, cm,
+    [], [], cr, [], [], [], [], cr, [], cr, [], [], [], cr, [], [], cr, cr, cr, [],
     (), [Request-Level Prediction], [*T*],
-    [], [], cm, cm, [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
+    [], [], cr, cr, [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [],
     (), [Machine-level Scheduler], [*ET*],
-    [], [], cm, [], [], [], cm, [], [], [], cm, [], [], cm, [], cm, [], [], cm,
+    [], [], cr, [], [], [], cr, [], [], [], cr, [], [], cr, [], cr, [], [], cr, [],
     (), [Instance Flip], na,
-    [], [], [], [], [], [], cm, [], [], [], [], [], [], cm, [], [], [], [], [],
+    [], [], [], [], [], [], cg, [], [], [], [], [], [], cg, [], [], [], [], [], [],
     (), [Global Profiling], [*P*],
-    [], cm, [], [], [], [], cm, [], [], [], [], cm, [], [], [], [], [], [], [],
+    [], cr, [], [], [], [], cr, [], [], [], [], cr, [], [], [], [], [], [], [], [],
 
     [*Verification*], [Non Open-Source], [*V*],
-    [], [], [], [], [], [], [], [], [], [], [], [], [], cm, [], [], [], [], [],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], cr,
     )
   ]
 
@@ -841,13 +899,13 @@ bitstream representations],
 
   #[
     #let model_header(name, year) = {
-      let size = 4pt
+      let size = 5pt
       set text(size: size)
       [*#name*\ ]
       [#year]
     }
 
-    #set text(size: 4pt)
+    #set text(size: 6pt)
     #let f1 = "Initial"
 
     #tablex(
@@ -906,12 +964,10 @@ bitstream representations],
     (), [Prepack Prefill], na,
     [], [], [], [], [], [], [], [], [], [], [], [], [],
 
-    rowspanx(4)[*Parallelism*], [Speculation], [*S*],
+    rowspanx(3)[*Parallelism*], [Speculation], [*S*],
     cm, [], cm, cm, [], [], cm, cm, [], [], [], cm, cm,
     (), [Tensor Parallelism], na,
     [], [], [], [], [], [], [], cm, [], [], [], [], cm,
-    (), [SafeTensors], na,
-    [], [], [], [], [], [], [], cm, [], [], [], [], [],
     (), [Sequence Parallelism], na,
     [], [], [], [], [], [], [], [], [], [], [], [], [],
 
@@ -932,6 +988,83 @@ bitstream representations],
   ]
 
   // https://github.com/vllm-project/vllm/issues/4104 相对于只缓存Prefix Cache，vLLM的Prefix Caching功能还缓存了Generated KV Cache
+]
+
+#slide[
+  #set text(size: 10pt)
+  The roadmap of the vLLM project includes the following features:
+
+  #tablex(
+    columns: 8,
+    align: center + horizon,
+    auto-vlines: false,
+    // repeat-header: true,
+
+    /* --- header --- */
+    [*Version*],
+    [*Date*],
+    [*Memory*],
+    [*Transmission*],
+    [*Batch*],
+    [*Parallelism*],
+    [*Scheduling*],
+    [*Model*],
+
+    /* -------------- */
+    [v0.1], 
+    [2306], 
+    [Paging], 
+    na, 
+    [Continuous Batching], 
+    na, 
+    na,
+    [MQA, GQA],
+
+    [v0.2],
+    [2309],
+    [],
+    [],
+    [],
+    [Better TP \& EP Support],
+    [],
+    [AWQ],
+
+    [v0.3],
+    [2401],
+    [Prefix Caching],
+    [],
+    [],
+    [],
+    [],
+    [GPTQ],
+
+    [v0.4],
+    [2404],
+    [],
+    [Optimize Distributed Communication],
+    [Chucked Prefill],
+    [Speculative Inference],
+    [],
+    [],
+
+    [v0.5],
+    [2407],
+    [CPU Offloading],
+    [],
+    [],
+    [Support PP],
+    [Schedule multiple GPU steps in advances],
+    [FP8],
+
+    [v0.6],
+    [2409],
+    [],
+    [],
+    [],
+    [],
+    [Asynchronous output processor],
+    [],
+  )
 ]
 
 
@@ -1017,12 +1150,12 @@ bitstream representations],
 = Appendix
 #slide[
   #set text(size: 12pt)
-  = References
+  = Intro
   https://github.com/DefTruth/Awesome-LLM-Inference
 
   https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/
 
-  - Parallelism
+  = Parallelism
 
   https://developer.nvidia.com/blog/demystifying-ai-inference-deployments-for-trillion-parameter-large-language-models/
 
@@ -1030,17 +1163,19 @@ bitstream representations],
   https://github.com/Trusted-AI/adversarial-robustness-toolbox
 ]
 
-// == Miscellaneous
-// #slide[
-//   = Quantization
-//   Quantization is the process of reducing the precision of a model’s weights and activations.
+#slide[
+  = Quantization
+  Quantization is the process of reducing the precision of a model’s weights and activations.
 
 
-// ][
-//   = Sparsity
-//   Sparsity is the process of setting a portion of the model’s weights to zero. Then the model can be expressed as a sparse matrix.
+][
+  = Sparsity
+  Sparsity is the process of setting a portion of the model’s weights to zero. Then the model can be expressed as a sparse matrix.
 
-// ][
-//   = Distillation
-//   Distillation is the process of training a smaller model to mimic the behavior of a larger model.
-// ]
+][
+  = Distillation
+  Distillation is the process of training a smaller model to mimic the behavior of a larger model.
+]
+//
+// 分布式的图
+// 趋势，结论
