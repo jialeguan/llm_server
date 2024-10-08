@@ -61,7 +61,6 @@
 
 #slide[
   = Stateless computation
-
   Private Cloud Compute must use the personal user data that it receives exclusively for the purpose of fulfilling the user's request. This data must never be available to anyone other than the user, not even to Apple staff, not even during active processing. And *this data must not be retained*, including via logging or for debugging, after the response is returned to the user. In other words, we want a strong form of stateless data processing where *personal data leaves no trace* in the PCC system.
 ]
 
@@ -361,13 +360,12 @@
 ]
 
 = Threats
-
 == Stateless Computation
 
 #slide[
-  #set text(size: 14pt)
+  #set text(size: 16pt)
   = Requirement
-  The system does not maintain any state between requests. Each request is processed independently, and the system does not store any information about previous requests.
+  The system does not maintain any state between requests and the system does not store any information about previous requests.
 
   = Attacker's Capabilities
   - *Weak*: An attacker gains access to the system's storage mechanism, potentially compromising databases or disk storage. They can also query the system to infer the presence of sensitive information.
@@ -460,7 +458,7 @@
 == Non-Targetability
 
 #slide[
-  #set text(size: 16pt)
+  #set text(size: 18pt)
   *Non-Targetability*: An attacker should not be able to attempt to compromise personal data that belongs to specific, targeted Private Cloud Compute users without attempting a broad compromise of the entire PCC system.
 
   *Definition*: Let $S={S_1, S_2, dots, S_n}$ denote the set of all servers in the system, with the capability of each server $S_i$ represented by $C(S_i)$.
@@ -558,9 +556,9 @@
 ]
 
 #slide[
-  #set text(size: 10pt)
+  #set text(size: 14pt)
   The roadmap of the vLLM project includes the following features:
-
+  #set text(size: 10pt)
   #vllm_table
 ]
 
@@ -642,8 +640,11 @@
 #show: appendix
 = Appendix
 #slide[
-  #set text(size: 14pt)
-  = Intro
+  #set text(size: 16pt)
+  = Attention
+  https://zh.d2l.ai/chapter_attention-mechanisms/attention-cues.html
+  
+  = Inference Optimization
   https://github.com/DefTruth/Awesome-LLM-Inference
 
   https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/
@@ -659,7 +660,7 @@
 #slide[
   = Confidential Computing on nVIDIA H100 GPU: A Performance Benchmark Study
 
-  #figure(image("png/tee_throughput.png", width: 60%))
+  #figure(image("png/tee_throughput.png", width: 70%))
 ]
 
 #slide[
@@ -696,6 +697,3 @@
   = Distillation
   Distillation is the process of training a smaller model to mimic the behavior of a larger model.
 ]
-//
-// 分布式的图
-// 趋势，结论

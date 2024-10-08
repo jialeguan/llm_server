@@ -33,9 +33,9 @@
 
   /* -------------- */
 
-  [*Memory*], [Enhanced memory management with finer granularity\ Improve reusability of KV Cache], [Paging\ Token-Level Optimization], [*S*],
-  [*Transmission*], [Minimizing transmission latency], [Data Duplication\ Prefetching\ PD Disaggregation], [*T*],
-  [*Scheduling*], [Customized scheduling for specific scenarios\ Cache-aware scheduler], [Request-level Predictions\ Machine-Level Scheduling\ Global profiling], [*STP*],
+  [*Memory*], [Improve reusability of KV Cache *with finer granularity*], [Paging\ Token-Level Optimization], [*S*],
+  [*Transmission*], [Minimizing transmission *latency*], [Data Duplication\ Prefetching/Pulling\ PD Disaggregation], [*T*],
+  [*Scheduling*], [Customized scheduling for *specific scenarios*], [Request-level Predictions\ Machine-Level Scheduling\ Global profiling], [*STP*],
   [*Parallelism*], [Optimizing parallelism for resource reuse and efficiency], [Pipeline Parallelism\ Tensor Parallelism\ Sequence Parallelism\ Speculative Inference], [*S*],
 )
 
@@ -132,10 +132,9 @@
   [*TBT*],
 
   /* -------------- */
-  rowspanx(5)[*Memory*], [Paging], neg, pos, [], pos, [], [],
-  (), [Prefix Caching], [], pos, [], pos, [], [],
+  rowspanx(4)[*Memory*], [Paging], neg, pos, [], pos, [], [],
+  (), [Prefix Caching], neg, pos, [], pos, [], [],
   (), [Disk Offloading], [], pos, neg, pos, [], [],
-  (), [Multi-Query Attention], [], pos, [], pos, pos, pos,
   (), [Group-Query Attention], [], pos, [], pos, pos, pos,
 
   rowspanx(4)[*Tranmission*], [Duplication], pos, neg, pos, pos, pos, pos,
@@ -143,7 +142,7 @@
   (), [Request Migration], pos, pos, neg, pos, pos, pos,
   (), [Disaggregated Arch], pos, pos, pos, pos, neg, neg,
 
-  rowspanx(3)[*Batch*], [Iteration-Level Batch], pos, [], pos, pos, neg, neg,
+  rowspanx(3)[*Batch*], [Continuous Batch], pos, [], pos, pos, neg, neg,
   (), [Chunked Prefill], pos, [], [], pos, pos, pos,
   (), [Prepack Prefill], pos, [], [], pos, neg, [],
 
@@ -250,7 +249,7 @@
   [#cm\ Deprioritize untargeted requests],
 
   [*Instance Flip*],
-  [#cm\ Flip to prefill instance],
+  [#cm\ Flip victim(s) to prefill instance],
   [],
 )
 
@@ -311,7 +310,7 @@
   (), [Disaggregated Arch], na,
   [], [], [], [], [], [], cg, [], [], [], [], cg, [], cg, [], [], [], [], [], [], [],
 
-  rowspanx(3)[*Batch*], [Iteration-Level Batch], na,
+  rowspanx(3)[*Batch*], [Continuous Batch], na,
   f1, [], cg, cg, cg, [], [], [], [], cg, [], cg, [], cg, [], [], [], [], [], [], [],
   (), [Chunked Prefill], na,
   [], [], [], [], [], [], [], [], [], f1, [], [], [], cg, [], [], [], [], cg, [], [],
@@ -376,57 +375,57 @@
   model_header("MindIE", "Huawei"),
   /* -------------- */
 
-  rowspanx(4)[*Memory*], [Paging], na,
-  cm, [], [], cm, cm, cm, [], cm, [], [], [], cm, [],
+  rowspanx(5)[*Memory*], [Paging], na,
+  cg, [], [], cg, cg, cg, [], cg, [], [], [], cg, [],
   (), [Token Attention], na,
-  [], cm, [], [], [], [], [], [], [], [], [], [], [],
+  [], cg, [], [], [], [], [], [], [], [], [], [], [],
   (), [Prefix Caching], [*S*],
-  cm, [], [], [], [], [], cm, [], [], [], [], [], [],
+  cr, [], [], [], [], [], cr, [], [], [], [], [], [],
   (), [Disk Offloading], [*SE*],
-  [], [], [], cm, cm, [], cm, [], [], [], [], [], cm,
+  [], [], [], cr, cr, [], cr, [], [], [], [], [], cr,
   // (), [Radix Attention], [*S*],
-  // cm, [], [], [], [], [], [], [], [], [], [], [], [],
-  // (), [Multi-Query Attention], na,
-  // [], [], [], [], [], [], cm, [], [], [], [], [], [],
+  // cg, [], [], [], [], [], [], [], [], [], [], [], [],
+  (), [Multi-Query Attention], na,
+  [], [], [], [], [], [], cr, [], [], [], [], [], [],
   // (), [Group-Query Attention], [*T*],
-  // [], [], [], [], [], [], cm, [], [], [], [], [], [],
+  // [], [], [], [], [], [], cg, [], [], [], [], [], [],
 
   rowspanx(4)[*Tranmission*], [Duplication], [*T*],
-  [], [], [], [], cm, [], [], [], [], [], [], [], [],
+  [], [], [], [], cr, [], [], [], [], [], [], [], [],
   (), [Pulling], [*SET*],
   [], [], [], [], [], [], [], [], [], [], [], [], [],
   (), [Request Migration], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [],
   (), [Disaggregated Arch], na,
-  cm, [], [], [], cm, [], [], [], [], [], [], [], cm,
+  cg, [], [], [], cg, [], [], [], [], [], [], [], cg,
 
-  rowspanx(3)[*Batch*], [Iteration-Level Batch], na,
-  cm, [], cm, [], cm, cm, cm, cm, cm, cm, cm, cm, [],
+  rowspanx(3)[*Batch*], [Continuous Batch], na,
+  cg, [], cg, [], cg, cg, cg, cg, cg, cg, cg, cg, [],
   (), [Chunked Prefill], na,
-  cm, [], [], [], cm, cm, [], [], [], [], [], [], [],
+  cg, [], [], [], cg, cg, [], [], [], [], [], [], [],
   (), [Prepack Prefill], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [],
 
-  rowspanx(3)[*Parallelism*], [Speculation], [*S*],
-  cm, [], cm, cm, [], [], cm, cm, [], [], [], cm, cm,
+  rowspanx(3)[*Parallelism*], [Speculation], na,
+  cg, [], cg, cg, [], [], cg, cg, [], [], [], cg, cg,
   (), [Tensor Parallelism], na,
-  [], [], [], [], [], [], [], cm, [], [], [], [], cm,
+  [], [], [], [], [], [], [], cg, [], [], [], [], cg,
   (), [Sequence Parallelism], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [],
 
   rowspanx(5)[*Scheduling*], [Priority-Based], [*T*],
-  [], [], [], cm, cm, cm, [], [], [], [], [], [], [],
+  [], [], [], cr, cr, cr, [], [], [], [], [], [], [],
   (), [Request-Level Prediction], [*T*],
-  [], cm, [], cm, [], [], [], [], [], [], [], [], [],
+  [], cr, [], cr, [], [], [], [], [], [], [], [], [],
   (), [Machine-level Scheduler], [*E*],
-  [], [], [], cm, cm, [], [], [], [], [], [], [], [],
+  [], [], [], cr, cr, [], [], [], [], [], [], [], [],
   (), [Instance Flip], [*T*],
   [], [], [], [], [], [], [], [], [], [], [], [], [],
   (), [Global Profiling], [*P*],
-  [], [], [], [], cm, [], [], [], [], [], [], [], [],
+  [], [], [], [], cr, [], [], [], [], [], [], [], [],
 
   [*Verification*], [Non Open-Source], [*V*],
-  [], [], [], [], cm, [], cm, [], [], [], [], [], [],
+  [], [], [], [], cr, [], cr, [], [], [], [], [], [],
 )
 
 #let vllm_table = tablex(
