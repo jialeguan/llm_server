@@ -26,17 +26,17 @@
   auto-vlines: false,
   //
   /* --- header --- */
-  [*Category*],
-  [*Trend*],
-  [*Examples*],
-  [*Conflict*],
+  [*领域*],
+  [*趋势*],
+  [*例子*],
+  [*PCC的要求*],
 
   /* -------------- */
 
-  [*Memory*], [Improve reusability of KV Cache *with finer granularity*], [Paging\ Token-Level Optimization], [*S*],
-  [*Transmission*], [Minimizing transmission *latency*], [Data Duplication\ Prefetching/Pulling\ PD Disaggregation], [*T*],
-  [*Scheduling*], [Customized scheduling for *specific scenarios*], [Request-level Predictions\ Machine-Level Scheduling\ Global profiling], [*STP*],
-  [*Parallelism*], [Optimizing parallelism for resource reuse and efficiency], [Pipeline Parallelism\ Tensor Parallelism\ Sequence Parallelism\ Speculative Inference], [*S*],
+  [*内存管理*], [更精细的内存管理，更高的复用度], [Paging\ Token-Level Optimization], [*S*],
+  [*传输*], [更精细的传输，使得资源能够按需到达], [Data Duplication\ Prefetching/Pulling\ PD Disaggregation], [*T*],
+  [*调度*], [根据场景进行优化], [Request-level Predictions\ Machine-Level Scheduling\ Global profiling], [*STP*],
+  [*并行*], [更高的并行度], [Pipeline Parallelism\ Tensor Parallelism\ Sequence Parallelism\ Speculative Inference], [*S*],
 )
 
 #let taxonmy_table = tablex(
@@ -46,73 +46,38 @@
   repeat-header: true,
 
   /* --- header --- */
-  [*Category*], [*Requirements*], [*Threats*], [*Guarantees*],
+  [*类别*], [*要求*], [*可能的威胁*], [*Apple 提出的一些方案*],
   /* -------------- */
 
-  rowspanx(2)[Technical], [Stateless computation], [Trace of data after processing\ Example:  Logging, debugging], [(Purpose) Only use user data to perform requested operations\
-  (Transient) Delete the data after fulfilling the request\
-  (Scope) Not available to even Apple staff\
+  rowspanx(2)[技术], [无状态计算\ Stateless computation], [Trace of data after processing\ Example:  Logging, debugging], [(目的) Only use user data to perform requested operations\
+  (时间) Delete the data after fulfilling the request\
+  (范围) Not available to even Apple staff\
   ],
 
-  (), [Non-targetability], [Targeted attack\ Example:  Steer request to compromised nodes], [
-  (Hardware) Strengthened supply chain\
+  (), [不可针对性\ Non-targetability], [Targeted attack\ Example:  Steer request to compromised nodes], [
+  (硬件) Strengthened supply chain\
   // Revalidation before being provisioned for PCC\
-  (Scheduler) Requests cannot be user/content-specific routed\
-  (Anonymity) OHTTP Relay, RSA Blind Signature\
-  (Scope) No system-wide encryption
+  (调度) Requests cannot be user/content-specific routed\
+  (加密匿名) OHTTP Relay, RSA Blind Signature\
+  (访问控制) No system-wide encryption
   ],
 
-  rowspanx(3)[Ecosystem], [Enforceable guarantees], [Technical enforceability\ Example:  External TLS-terminating load balancer], [
-  (Hardware) Secure Enclave, Secure Boot\
-  (System) Signed System Volume, Swift on Server\
-  (Software) Code Signing, Sandboxing
+  rowspanx(3)[生态], [可强制执行的保证\ Enforceable guarantees], [Technical enforceability\ Example:  External TLS-terminating load balancer], [
+  (硬件) Secure Enclave, Secure Boot\
+  (系统) Signed System Volume, Swift on Server\
+  (软件) Code Signing, Sandboxing
   ],
 
-  (), [No privileged runtime access], [Privileged interfaces\ Example:  Shell access by SREs], [
+  (), [无特权运行时访问\ No privileged runtime access], [Privileged interfaces\ Example:  Shell access by SREs], [
   No remote shell. Only pre-specified, structured, and audited \
   logs/metrics can leave the node\
   User data is reviewed by multiple indepedent layers\
   ],
 
-  (), [Verifiable transparency], [Uninspected code], [
+  (), [可验证的透明性\ Verifiable transparency], [Uninspected code], [
   Every production build of PCC publicly available
   ],
 )
-
-// #let fletcher-diagram = touying-reducer.with(reduce: fletcher.diagram, cover: fletcher.hide)
-
-// #let architecture_graph = fletcher-diagram(
-//   let main_row = 1,
-//   let upper_row = 0,
-//   let lower_row = 2,
-//   let left_col = 0,
-//   let middle_col = 3,
-//   let right_col = 6,
-
-//   let user = (left_col, main_row),
-//   let scheduler = (middle_col, main_row),
-//   let worker_a = (right_col, upper_row),
-//   let worker_b = (right_col, lower_row),
-
-//   node-corner-radius: 4pt,
-//   node(user, [*User*]),
-//   node(scheduler, [*Scheduler*]),
-//   node(worker_a, [*Worker A*]),
-//   node(worker_b, [*Worker B*]),
-
-//   edge(user, scheduler, "-|>", [Input], shift: 3pt, label-side: left),
-//   edge(scheduler, user, "-|>", [Output], shift: 3pt, label-side: left),
-//   edge(scheduler, worker_a, "-|>", [Task], shift: 3pt, label-side: left),
-//   edge(worker_a, scheduler, "-|>", [Result], shift: 3pt, label-side: left),
-//   edge(scheduler, worker_b, "-|>", [Task], shift: 3pt, label-side: left),
-//   edge(worker_b, scheduler, "-|>", [Result], shift: 3pt, label-side: left),
-//   edge(worker_a, worker_b, "-|>", [Data], shift: 3pt, label-side: left),
-//   edge(worker_b, worker_a, "-|>", [Data], shift: 3pt, label-side: left),
-// )
-// #slide[
-//   #architecture_graph
-// ]
-
 
 #let opt_goal_table = tablex(
   columns: 8,
@@ -184,37 +149,35 @@
 #let s_attack_table = tablex(
   columns: 8,
   align: center + horizon,
-  vlinex(x: 6),
 
   auto-vlines: false,
   // repeat-header: true,
   // vlinex(x: 5, stroke: gray),
 
   /* --- header --- */
-  rowspanx(2)[*Optimization*],
-  rowspanx(2)[*Stored States*],
-  rowspanx(2)[*Location*],
-  rowspanx(2)[*Mitigation*],
-  colspanx(2)[*Weak Attacker*],
-  colspanx(2)[*Strong Attacker*],
+  rowspanx(2)[*优化*],
+  rowspanx(2)[*残留的状态*],
+  rowspanx(2)[*储存位置*],
+  rowspanx(2)[*缓解策略*],
+  colspanx(4)[*攻击*],
 
-  [Inference],
-  [Replay],
-  [Extraction],
-  [Mapping],
+  [数据泄露],
+  [信息推断],
+  [访问模式分析],
+  [差分分析],
   /* -------------- */
 
-  [Prefix Caching], [KV Cache], [GPU Memory\ CPU Memory], [Cache Expiry\ Isolation],
-  [], [], cm, cm,
-
-  [Disk Offloading], [KV Cache], [Disk Storage\ (SSD, Hard Drive)], [Encryption],
+  [Prefix Caching], [KV Cache], [GPU 内存\ CPU 内存], [过期机制 \ 隔离],
   cm, cm, cm, na,
 
-  [Pulling], [KV Cache], [GPU Memory\ CPU Memory], [Randomized Scheduler],
-  [], [], cm, cm,
+  [Disk Offloading], [KV Cache], [外置存储器\ (SSD, Hard Drive)], [加密],
+  cm, na, na, na,
 
-  [Database-based\ Speculative Inference], [Token], [GPU Memory\ CPU Memory], [Differential Priavacy],
-  [], [], cm, [],
+  [Data Duplication], [KV Cache], [GPU 内存\ CPU 内存], [过期同步机制],
+  cm, [], [], cm,
+
+  [Database-based\ Speculative Inference], [Token], [GPU 内存\ CPU 内存], [差分隐私\ 使用小模型预测],
+  cm, cm, na, [],
 )
 
 #let t_attack_table = tablex(
@@ -267,9 +230,9 @@
   // repeat-header: true,
 
   /* --- header --- */
-  [*Category*],
-  [*Optimization*],
-  [*Threat*],
+  [*类别*],
+  [*优化*],
+  [*威胁*],
   model_header_url("Orca", 2206, "https://www.usenix.org/conference/osdi22/presentation/yu"),
   model_header_url("FlexGen", 2303, "https://arxiv.org/abs/2303.06865"),
   model_header_url("FastServe", 2305, "https://arxiv.org/abs/2305.05920"),
@@ -294,14 +257,14 @@
   model_header_url("TR", 2408, "https://www.arxiv.org/abs/2408.08696"),
 
   /* -------------- */
-  rowspanx(3)[*Memory*], [Paging], na,
+  rowspanx(3)[*内存*], [Paging], na,
   [], [], [], [], f1, [], [], cg, [], cg, [], [], [], cg, [], [], [], [], [], [], [],
   (), [Prefix Caching], [*SE*],
   [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [], [], cr, [], [],
   (), [Disk Offloading], [*SE*],
   [], cr, [], [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [],
 
-  rowspanx(4)[*Tranmission*], [Duplication], [*T*],
+  rowspanx(4)[*传输*], [Duplication], [*T*],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
   (), [Pulling], [*SET*],
   [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [],
@@ -310,14 +273,14 @@
   (), [Disaggregated Arch], na,
   [], [], [], [], [], [], cg, [], [], [], [], cg, [], cg, [], [], [], [], [], [], [],
 
-  rowspanx(3)[*Batch*], [Continuous Batch], na,
+  rowspanx(3)[*批处理*], [Continuous Batch], na,
   f1, [], cg, cg, cg, [], [], [], [], cg, [], cg, [], cg, [], [], [], [], [], [], [],
   (), [Chunked Prefill], na,
   [], [], [], [], [], [], [], [], [], f1, [], [], [], cg, [], [], [], [], cg, [], [],
   (), [Prepack Prefill], na,
   [], [], [], [], [], [], [], [], [], [], [], cg, [], cg, [], [], [], [], [], [], [],
 
-  rowspanx(5)[*Parallelism*], [Speculation], na,
+  rowspanx(5)[*并行*], [Speculation], na,
   [], [], [], cg, [], cg, [], cg, cg, [], [], [], cg, [], [], [], [], [], [], [], [],
   (), [Context-Based Speculation], [*S*],
   [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
@@ -328,7 +291,7 @@
   (), [Sequence Parallelism], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cg, [], [], [], [], [],
 
-  rowspanx(5)[*Scheduling*], [Priority-Based], [*T*],
+  rowspanx(5)[*调度*], [Priority-Based], [*T*],
   [], [], cr, [], [], [], [], cr, [], cr, [], [], [], cr, [], [], cr, cr, cr, [], [],
   (), [Request-Level Prediction], [*T*],
   [], [], cr, cr, [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [],
@@ -339,7 +302,7 @@
   (), [Global Profiling], [*P*],
   [], cr, [], [], [], [], cr, [], [], [], [], cr, [], [], [], [], [], [], [], cr, [],
 
-  [*Verification*], [Non Open-Source], [*V*],
+  [*审计*], [Non Open-Source], [*V*],
   [], [], [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [], cr,
 )
 
@@ -357,9 +320,9 @@
   // repeat-header: true,
 
   /* --- header --- */
-  [*Category*],
-  [*Optimization*],
-  [*Threat*],
+  [*类别*],
+  [*优化*],
+  [*威胁*],
   model_header("vLLM", "Open Source"),
   model_header("LightLLM", "Open Source"),
   model_header("FlexFlow", "Open Source"),
@@ -375,7 +338,7 @@
   model_header("MindIE", "Huawei"),
   /* -------------- */
 
-  rowspanx(5)[*Memory*], [Paging], na,
+  rowspanx(5)[*内存*], [Paging], na,
   cg, [], [], cg, cg, cg, [], cg, [], [], [], cg, [],
   (), [Token Attention], na,
   [], cg, [], [], [], [], [], [], [], [], [], [], [],
@@ -390,7 +353,7 @@
   // (), [Group-Query Attention], [*T*],
   // [], [], [], [], [], [], cg, [], [], [], [], [], [],
 
-  rowspanx(4)[*Tranmission*], [Duplication], [*T*],
+  rowspanx(4)[*传输*], [Duplication], [*T*],
   [], [], [], [], cr, [], [], [], [], [], [], [], [],
   (), [Pulling], [*SET*],
   [], [], [], [], [], [], [], [], [], [], [], [], [],
@@ -399,21 +362,21 @@
   (), [Disaggregated Arch], na,
   cg, [], [], [], cg, [], [], [], [], [], [], [], cg,
 
-  rowspanx(3)[*Batch*], [Continuous Batch], na,
+  rowspanx(3)[*批处理*], [Continuous Batch], na,
   cg, [], cg, [], cg, cg, cg, cg, cg, cg, cg, cg, [],
   (), [Chunked Prefill], na,
   cg, [], [], [], cg, cg, [], [], [], [], [], [], [],
   (), [Prepack Prefill], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [],
 
-  rowspanx(3)[*Parallelism*], [Speculation], na,
+  rowspanx(3)[*并行*], [Speculation], na,
   cg, [], cg, cg, [], [], cg, cg, [], [], [], cg, cg,
   (), [Tensor Parallelism], na,
   [], [], [], [], [], [], [], cg, [], [], [], [], cg,
   (), [Sequence Parallelism], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [],
 
-  rowspanx(5)[*Scheduling*], [Priority-Based], [*T*],
+  rowspanx(5)[*调度*], [Priority-Based], [*T*],
   [], [], [], cr, cr, cr, [], [], [], [], [], [], [],
   (), [Request-Level Prediction], [*T*],
   [], cr, [], cr, [], [], [], [], [], [], [], [], [],
@@ -424,7 +387,7 @@
   (), [Global Profiling], [*P*],
   [], [], [], [], cr, [], [], [], [], [], [], [], [],
 
-  [*Verification*], [Non Open-Source], [*V*],
+  [*审计*], [Non Open-Source], [*V*],
   [], [], [], [], cr, [], cr, [], [], [], [], [], [],
 )
 
@@ -435,14 +398,14 @@
   // repeat-header: true,
 
   /* --- header --- */
-  [*Version*],
-  [*Date*],
-  [*Memory*],
-  [*Transmission*],
-  [*Batch*],
-  [*Parallelism*],
-  [*Scheduling*],
-  [*Model*],
+  [*版本*],
+  [*日前*],
+  [*内存*],
+  [*传输*],
+  [*批处理*],
+  [*并行*],
+  [*调度*],
+  [*模型*],
   /* -------------- */
   [v0.1],
   [2306],
