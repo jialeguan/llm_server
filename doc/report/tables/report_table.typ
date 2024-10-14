@@ -28,12 +28,12 @@
   /* --- header --- */
   [*领域*],
   [*趋势*],
-  [*例子*],
+  [*示例*],
   [*PCC的要求*],
 
   /* -------------- */
 
-  [*内存管理*], [更精细的内存管理，更高的复用度], [Paging\ Token-Level Optimization], [*S*],
+  [*内存管理*], [更精细的内存管理，更高的复用度], [Paging\ Token-Level Optimization], [*无状态计算*],
   [*传输*], [更精细的传输，使得资源能够按需到达], [Data Duplication\ Prefetching/Pulling\ PD Disaggregation], [*T*],
   [*调度*], [根据场景进行优化], [Request-level Predictions\ Machine-Level Scheduling\ Global profiling], [*STP*],
   [*并行*], [更高的并行度], [Pipeline Parallelism\ Tensor Parallelism\ Sequence Parallelism\ Speculative Inference], [*S*],
@@ -49,12 +49,12 @@
   [*类别*], [*要求*], [*可能的威胁*], [*Apple 提出的一些方案*],
   /* -------------- */
 
-  rowspanx(2)[技术], [无状态计算\ Stateless computation], [Trace of data after processing\ Example:  Logging, debugging], [(目的) Only use user data to perform requested operations\
+  rowspanx(2)[技术], [无状态计算\ Stateless computation], [数据处理的痕迹\ Example:  Logging, debugging], [(目的) Only use user data to perform requested operations\
   (时间) Delete the data after fulfilling the request\
   (范围) Not available to even Apple staff\
   ],
 
-  (), [不可针对性\ Non-targetability], [Targeted attack\ Example:  Steer request to compromised nodes], [
+  (), [不可针对性\ Non-targetability], [定向攻击，定向引导请求\ Example:  Steer request to compromised nodes], [
   (硬件) Strengthened supply chain\
   // Revalidation before being provisioned for PCC\
   (调度) Requests cannot be user/content-specific routed\
@@ -62,19 +62,19 @@
   (访问控制) No system-wide encryption
   ],
 
-  rowspanx(3)[生态], [可强制执行的保证\ Enforceable guarantees], [Technical enforceability\ Example:  External TLS-terminating load balancer], [
+  rowspanx(3)[生态], [可强制执行的保证\ Enforceable guarantees], [外部组件引入的威胁\ Example:  External TLS-terminating load balancer], [
   (硬件) Secure Enclave, Secure Boot\
   (系统) Signed System Volume, Swift on Server\
   (软件) Code Signing, Sandboxing
   ],
 
-  (), [无特权运行时访问\ No privileged runtime access], [Privileged interfaces\ Example:  Shell access by SREs], [
+  (), [无特权运行时访问\ No privileged runtime access], [后门和运维 Shell\ Example:  Shell access by SREs], [
   No remote shell. Only pre-specified, structured, and audited \
   logs/metrics can leave the node\
   User data is reviewed by multiple indepedent layers\
   ],
 
-  (), [可验证的透明性\ Verifiable transparency], [Uninspected code], [
+  (), [可验证的透明性\ Verifiable transparency], [没有经过安全专家验证的代码], [
   Every production build of PCC publicly available
   ],
 )
@@ -167,7 +167,7 @@
   [差分分析],
   /* -------------- */
 
-  [Prefix Caching], [KV Cache], [GPU 内存\ CPU 内存], [过期机制 \ 隔离],
+  [Prefix Caching], [Token\ KV Cache], [GPU 内存\ CPU 内存], [过期机制 \ 隔离],
   cm, cm, cm, na,
 
   [Disk Offloading], [KV Cache], [外置存储器\ (SSD, Hard Drive)], [加密],
@@ -190,29 +190,33 @@
   // vlinex(x: 5, stroke: gray),
 
   /* --- header --- */
-  [*Optimization*],
-  [*Increase Hit Rate*],
-  [*Decrease Miss Rate*],
+  [*优化*],
+  [*增加 Hit*],
+  [*减少 Miss*],
 
   /* -------------- */
   [*Duplication*],
-  [#cm\ Duplicate targeted cache to other victims],
-  [#cm\ Duplicate untargeted cache to non-victims],
+  [#cm\ 复制目标的缓存到其他受害者],
+  [#cm\ 复制非目标的缓存到非受害者],
 
   [*Pulling*],
-  [#cm\ Pull targeted cache from other victims],
+  [#cm\ 从目标的缓存中拉取数据],
   na,
 
-  [*Priority-Based Scheduling*],
-  [#cm\ Prioritize targeted requests],
-  [#cm\ Deprioritize untargeted requests],
+  [*Request Migration*],
+  [#cm\ 迁入目标的请求],
+  [#cm\ 迁出非目标的请求],
 
-  [*Request-Level Prediction*],
-  [#cm\ Prioritize targeted requests],
-  [#cm\ Deprioritize untargeted requests],
+  [*Priority-Based Scheduling*],
+  [#cm\ 提高目标的请求的优先级],
+  [#cm\ 降低非目标的请求的优先级],
+
+  // [*Request-Level Prediction*],
+  // [#cm\ 提高目标的请求的优先级],
+  // [#cm\ 降低非目标的请求的优先级],
 
   [*Instance Flip*],
-  [#cm\ Flip victim(s) to prefill instance],
+  [#cm\ 让受害者节点转变成预填充节点],
   [],
 )
 
@@ -264,9 +268,9 @@
   (), [Disk Offloading], [*SE*],
   [], cr, [], [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [],
 
-  rowspanx(4)[*传输*], [Duplication], [*T*],
+  rowspanx(4)[*传输*], [Duplication], [*ST*],
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  (), [Pulling], [*SET*],
+  (), [Pulling], [*T*],
   [], [], [], [], [], [], [], [], [], [], [], cr, [], [], [], [], [], [], [], [], [],
   (), [Request Migration], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], cg, [], cg, [], [], [],
@@ -353,9 +357,9 @@
   // (), [Group-Query Attention], [*T*],
   // [], [], [], [], [], [], cg, [], [], [], [], [], [],
 
-  rowspanx(4)[*传输*], [Duplication], [*T*],
+  rowspanx(4)[*传输*], [Duplication], [*ST*],
   [], [], [], [], cr, [], [], [], [], [], [], [], [],
-  (), [Pulling], [*SET*],
+  (), [Pulling], [*T*],
   [], [], [], [], [], [], [], [], [], [], [], [], [],
   (), [Request Migration], na,
   [], [], [], [], [], [], [], [], [], [], [], [], [],
@@ -399,7 +403,7 @@
 
   /* --- header --- */
   [*版本*],
-  [*日前*],
+  [*日期*],
   [*内存*],
   [*传输*],
   [*批处理*],
