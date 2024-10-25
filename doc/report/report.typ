@@ -12,7 +12,7 @@
   footer: "PCC",
   navigation: "mini-slides",
   config-info(
-    title: [隐私云计算下的大模型推理优化],
+    title: [隐私云计算视角下的大模型推理优化],
     subtitle: [],
     author: [管佳乐],
     date: datetime.today(),
@@ -86,7 +86,7 @@
   edge(scheduler, user, "-|>", [`enc(output)`], shift: 3pt, label-side: left),
   edge(scheduler, worker_a, "-|>", [`input`], shift: 3pt, label-side: left),
   edge(worker_b, scheduler, "-|>", [`output`], shift: 3pt, label-side: left),
-  edge(worker_a, worker_b, "-|>", [`KV Cache` (中间数据)], shift: 3pt, label-side: left),
+  edge(worker_a, worker_b, "-|>", [`KV Cache` (Intermediate Data)], shift: 3pt, label-side: left),
 )
 
 #slide[
@@ -206,7 +206,7 @@
   = 任务的异质性
   #set text(size: 14pt)
   通用性和应用的多样性导致推理请求的异构性，表现为输入长度、输出长度、期望延迟等方面的差异。
-  
+
   比如在代码生成任务中，输入长度可能是几十行代码，而在问答任务中，输入长度可能是几个句子。这种异构性使得难以设计一个通用的优化策略，需要根据具体的任务特性进行优化。
 ][
   = 执行的不可预测性
@@ -228,7 +228,12 @@
 
   挑战：
   - 很难在实际应用中大规模使用端到端的加密
-  - 不能期待所有的数据都是匿名化的
+  - 由于应用和场景的多样性，不能期待所有的数据都是匿名化的
+
+  #pause
+
+  - 在工作节点的处理过程中，可能会产生一些中间状态，这些状态可能包含用户的敏感信息
+  - 部分节点的攻陷可能会导致大量用户数据的泄露
 ]
 
 
@@ -290,7 +295,7 @@
 #slide[
   = PagedAttention：分页管理
   #set text(size: 14pt)
-  PagedAttention#footnote_link("Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180") 是一种将注意力矩阵划分为较小页面的技术。这种方法几乎完美地解决了内存碎片问题，因此，PagedAttention 已成为大模型推理系统中动态内存分配的事实标准。
+  PagedAttention#footnote_link("Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180") 是一种将注意力矩阵划分为较小页面的技术。这种方法一定程度上解决了内存碎片问题，因此，PagedAttention 已成为大模型推理系统中动态内存分配的事实标准。
 
   #figure(
     image("../png/paged_attention_waste.png", width: 90%),
@@ -469,7 +474,7 @@
   // *定义*: Let $S={S_1, S_2, dots, S_n}$ denote the set of all servers in the system, with the capability of each server $S_i$ represented by $C(S_i)$.
   // The set of requests handled by these servers is denoted as $R(S) = {R(S_1), R(S_2), dots, R(S_n)}$.
   // The system is considered non-targetable if, for any subset $T = {T_1, T_2, dots, T_m} subset.eq S$ of servers, the probability of compromising the data of a specific user $u$ is given by:
-  
+
   设 $S={S_1, S_2, dots, S_n}$ 为系统中所有服务器的集合，每个服务器 $S_i$ 的能力用 $C(S_i)$ 表示。这些服务器处理的请求集合表示为 $R(S) = {R(S_1), R(S_2), dots, R(S_n)}$。如果对于任何服务器子集 $T = {T_1, T_2, dots, T_m} subset.eq S$，攻陷特定用户 $u$ 的数据被攻陷的概率如下所示，则该系统被认为是*不可针对的*:
 
   $ P(u in R(T)) = frac(sum_(i=1)^m C(T_i), sum_(i=1)^n C(S_i)) $
@@ -535,11 +540,10 @@
   //   *V*: Verifiable transparency
   // ]
 
-  #[
-    #set text(size: 6pt)
-    #pcc_req
-    #academic_table
-  ]
+  #set text(size: 2pt)
+  #pcc_req
+  #set text(size: 5pt)
+  #academic_table
 ]
 
 #slide[
@@ -584,22 +588,23 @@
 
   由专注于Web3可验证计算的初创公司 Phala Network 于2024年9月6日发布在ArXiv上
 
-  = 核心观察
+  = 观察
 
+  - 对于吞吐量指标，平均的性能损失小于 7%
+    - 随着 token 数量的增加，性能损失逐渐减小
+    - 对于70B参数的模型，性能损失可以忽略不计
   - 预填充阶段受到的影响相对更大
     - 可能是由于初始加载和加密开销
     - 对于小模型，第一个token的生成平均延迟增加了接近20%
-  - 随着 token 数量的增加，性能损失逐渐减小
-    - 平均的性能损失小于 7%，对于70B参数的模型，性能损失可以忽略不计
-]
-
-#focus-slide[
-  Thanks
 ]
 
 #show: appendix
 
+= 附录
 
+#focus-slide[
+  Thanks
+]
 #slide[
   = 吞吐量损失 -7%
   #set text(size: 12pt)
@@ -642,7 +647,7 @@
 ][
   #set text(size: 12pt)
 
-  并行化处理效率提升：随着token数量的增加，模型在生成过程中可能会更多依赖并行处理和GPU的并发能力，而TEE对并行处理的影响较小，因此在处理更长的序列时，整体的计算效率提升，加密的开销变得更为可忽略。
+  并行化处理效率提升：随着token数量的增加，模型在生成过程中可能会更多依赖并行处理和GPU的并发能力，而TEE对并行处理的影响较小，因此在处理更长的序列时，整体的计算效率提升，加密的开销变得更为可忽略。sv
 
   缓存和推理优化的效果：长序列的推理过程中，模型更容易利用KV cache等缓存机制来减少重复计算。尤其是在生成后续tokens时，缓存能显著提高效率，进一步抵消了TEE带来的额外开销。而短序列则在生成第一个token时受缓存的作用较小，overhead显得更高。
 
@@ -714,7 +719,7 @@
 // ]
 
 
-= 附录
+
 #slide[
   #set text(size: 16pt)
   = Attention
